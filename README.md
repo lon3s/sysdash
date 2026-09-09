@@ -3,6 +3,10 @@
 Cyberpunk-System-Dashboard für den 2. Bildschirm: CPU/RAM/GPU/Netz in Echtzeit,
 LLM-Telemetrie, Stromverbrauch (GPU + ShellyEM3) und Wetter.
 
+| GIF-Demo | Screenshot |
+|:---:|:---:|
+| ![Demo-Animation](assets/demo.gif) | ![Screenshot](assets/screenshot.png) |
+
 ## Features
 
 - **FastAPI-Server** (`127.0.0.1:8787`) mit WebSocket-Streams
