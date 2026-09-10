@@ -24,7 +24,7 @@ STATIC = Path(__file__).parent / "static"
 ENERGY_FILE = Path(__file__).parent / "energy.json"
 SHELLEY_FILE = Path(__file__).parent / "shelly.json"
 SHELLEY_URL = os.environ.get("SYSDASH_SHELLY", "http://192.168.178.21")
-DOCKER_LOGS = ["docker", "logs", "-f", "--tail", "200", "llama-cpp"]
+JOURNAL_LOGS = ["journalctl", "-u", "llama-cpp", "-f", "--no-pager", "-n", "200"]
 SLOTS_URL = "http://127.0.0.1:9070/slots"
 WEATHER_URL = ("https://api.open-meteo.com/v1/forecast"
                "?latitude=51.10&longitude=7.35"
@@ -386,7 +386,7 @@ async def ws_stats(ws: WebSocket):
 async def ws_logs(ws: WebSocket):
     await ws.accept()
     proc = await asyncio.create_subprocess_exec(
-        *DOCKER_LOGS,
+        *JOURNAL_LOGS,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         bufsize=0,
@@ -398,6 +398,9 @@ async def ws_logs(ws: WebSocket):
             if not line:
                 break
             text = line.decode(errors="replace").rstrip()
+            # journalctl-Prefix ("Sep 10 14:45:50 host proc[pid]: ") wegschneiden
+            if "]: " in text:
+                text = text.split("]: ", 1)[1]
             if text:
                 await ws.send_text("log " + text)
     finally:

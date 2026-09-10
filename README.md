@@ -12,7 +12,7 @@ LLM-Telemetrie, Stromverbrauch (GPU + ShellyEM3) und Wetter.
 - **FastAPI-Server** (`127.0.0.1:8787`) mit WebSocket-Streams
   - `/ws/stats` — CPU/RAM/Swap/Top-Prozesse, beide GPUs (nvidia-smi), LLM-Slots,
     Netzwerk-Raten, GPU-Energie, ShellyEM3, Wetter (~2 Hz)
-  - `/ws/logs` — `docker logs -f llama-cpp`, zeilenweise
+  - `/ws/logs` — `journalctl -u llama-cpp -f`, zeilenweise
 - **Energie-Integration** — GPU-Leistung wird in kWh integriert und in
   `energy.json` persistiert (pro Tag + gesamt)
 - **ShellyEM3** — absolute Zählerwerte vom Stromkasten, Tages-Delta wird
@@ -48,7 +48,7 @@ Dann `http://127.0.0.1:8787` im Browser öffnen.
 Zusätzlich erwartet der Server:
 
 - `nvidia-smi` im PATH (für GPU-Daten)
-- Docker-Container `llama-cpp` (für die Logs)
+- systemd-Service `llama-cpp` (für die Logs)
 - llama.cpp-Server mit `/slots`-Endpoint auf Port 9070
 
 ## Dateien

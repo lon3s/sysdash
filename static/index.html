@@ -96,6 +96,116 @@
   [data-theme="solar-dark"] .big .v, [data-theme="solar-light"] .big .v,
   [data-theme="solar-dark"] .state, [data-theme="solar-light"] .state{ text-shadow:none }
 
+  /* ---------- fonts (lokal) ---------- */
+  @font-face{font-family:"DSEG7"; src:url("fonts/DSEG7.woff") format("woff"); font-display:swap}
+  @font-face{font-family:"VT323"; src:url("fonts/VT323.ttf") format("truetype"); font-display:swap}
+  @font-face{font-family:"Orbitron"; src:url("fonts/Orbitron.ttf") format("truetype"); font-display:swap}
+  [data-font="7seg"] #clock, [data-font="7seg"] .big .v, [data-font="7seg"] .energy .v,
+  [data-font="7seg"] .shelly .v, [data-font="7seg"] .state{ font-family:"DSEG7",monospace; letter-spacing:3px }
+  [data-font="retro"] body{ font-family:"VT323","JetBrains Mono",monospace }
+  [data-font="retro"] .row{ font-size:16px }
+  [data-font="retro"] table{ font-size:15px }
+  [data-font="retro"] .big .v{ font-size:44px }
+  [data-font="tech"] header h1, [data-font="tech"] .panel h2, [data-font="tech"] .big .v,
+  [data-font="tech"] .energy .v, [data-font="tech"] .shelly .v, [data-font="tech"] #clock,
+  [data-font="tech"] .state{ font-family:"Orbitron","JetBrains Mono",monospace; letter-spacing:2px }
+
+  /* ---------- design: ecken / effekte / animation / diagramme ---------- */
+  [data-corners="round"] .panel, [data-corners="round"] #menu, [data-corners="round"] #modal,
+  [data-corners="round"] .wchip{ clip-path:none; border-radius:12px }
+  [data-corners="square"] .panel, [data-corners="square"] #menu, [data-corners="square"] #modal,
+  [data-corners="square"] .wchip{ clip-path:none }
+  [data-scanlines="off"] body::before{ display:none }
+  [data-grid="off"] body::after{ display:none }
+  [data-glow="off"] *{ text-shadow:none!important; box-shadow:none!important }
+  [data-glow="soft"] header h1, [data-glow="soft"] header h1 span, [data-glow="soft"] #clock,
+  [data-glow="soft"] #date, [data-glow="soft"] .big .v, [data-glow="soft"] .energy .v,
+  [data-glow="soft"] .shelly .v, [data-glow="soft"] .shelly .tag, [data-glow="soft"] .gpu .name b,
+  [data-glow="soft"] .state{ text-shadow:0 0 4px currentColor!important }
+  [data-glow="soft"] .bar i, [data-glow="soft"] .cores i, [data-glow="soft"] .led,
+  [data-glow="soft"] .progress-wrap .bar i{ box-shadow:0 0 4px currentColor!important }
+  [data-anim="instant"] .bar i, [data-anim="instant"] .cores i{ transition:none }
+  [data-anim="smooth"] .bar i{ transition:width .5s cubic-bezier(.4,0,.2,1) }
+  .spark{ display:none; width:100%; height:26px; margin-top:4px; background:var(--logbg); border:1px solid var(--line) }
+  [data-diagram="spark"] .bar{ display:none }
+  [data-diagram="spark"] .spark{ display:block }
+  [data-diagram="both"] .spark{ display:block }
+
+  /* ---------- design: seitenstile ---------- */
+  [data-style="flat"] body::before, [data-style="flat"] body::after{ display:none }
+  [data-style="flat"] .panel, [data-style="flat"] #menu, [data-style="flat"] #modal,
+  [data-style="flat"] .wchip{ clip-path:none; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,.18) }
+  [data-style="flat"] *{ text-shadow:none!important; box-shadow:none!important }
+  [data-style="depth"] .panel{
+    box-shadow:0 16px 34px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
+    background:linear-gradient(180deg, var(--panel2), var(--panel) 45%);
+    transform:perspective(1400px) rotateX(1deg);
+  }
+  [data-style="dense"] .panel h2{ font-size:12px; padding:8px 12px 6px; letter-spacing:3px }
+  [data-style="dense"] .body{ padding:10px 12px; gap:8px }
+  [data-style="dense"] .row{ font-size:13px }
+  [data-style="dense"] .bar{ height:12px; margin-top:2px }
+  [data-style="dense"] .spark{ height:18px }
+  [data-style="dense"] table{ font-size:12px }
+  [data-style="dense"] td, [data-style="dense"] th{ padding:2px 6px }
+  [data-style="dense"] .big .v{ font-size:28px }
+  [data-style="dense"] .big{ padding:8px 12px; gap:14px }
+  [data-style="dense"] .energy .v{ font-size:18px }
+  [data-style="dense"] .energy .w, [data-style="dense"] .shelly .w{ font-size:18px }
+  [data-style="dense"] .shelly .v{ font-size:17px }
+  [data-style="dense"] .gpu{ padding:8px 10px; gap:6px }
+  [data-style="dense"] header h1{ font-size:28px }
+  [data-style="dense"] #clock{ font-size:28px }
+  [data-style="dense"] .wchip{ min-width:54px; padding:3px 5px }
+  [data-style="dense"] .cores{ height:28px }
+  [data-style="dense"] .state{ font-size:22px }
+
+  /* ---------- modal (Popup) ---------- */
+  #overlay{ position:fixed; inset:0; z-index:300; background:rgba(2,4,10,.7);
+    display:none; align-items:center; justify-content:center }
+  #overlay.open{ display:flex }
+  #modal{ width:640px; max-width:94vw; max-height:90vh; overflow-y:auto; background:var(--panel);
+    border:1px solid var(--line); box-shadow:0 18px 60px rgba(0,0,0,.6);
+    clip-path:polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+    scrollbar-width:thin; scrollbar-color:var(--line) transparent }
+  #modal .tabs{ display:flex; position:sticky; top:0; background:var(--panel); z-index:2 }
+  #modal .tab{ flex:1; text-align:center; padding:14px; font-size:14px; letter-spacing:3px;
+    color:var(--dim); cursor:pointer; border-bottom:2px solid var(--line) }
+  #modal .tab.active{ color:var(--cyan); border-bottom-color:var(--cyan); text-shadow:0 0 8px var(--cyan) }
+  .mtab{ display:none; padding:14px 18px 6px }
+  .mtab.active{ display:block }
+  #modal .colors{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+  #modal .colors label{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--dim) }
+  #modal .colors input[type=color]{ width:38px; height:26px; border:1px solid var(--line); background:none; padding:0; cursor:pointer }
+  #modal .colors .lbl{ flex:1 }
+  #modal .actions{ display:flex; gap:8px; padding:12px 0 4px }
+  #modal .actions button{ flex:1; padding:9px; background:var(--panel2); color:var(--txt);
+    border:1px solid var(--line); cursor:pointer; font-family:inherit; font-size:13px }
+  #modal .actions button:hover{ border-color:var(--cyan) }
+  .dsec{ margin-bottom:18px }
+  .dsec h4{ font-size:12px; letter-spacing:3px; color:var(--dim); font-weight:400; margin-bottom:8px;
+    border-bottom:1px solid var(--line); padding-bottom:6px }
+  .dgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px }
+  .dgrid3{ grid-template-columns:1fr 1fr 1fr }
+  .dopt{ border:1px solid var(--line); background:var(--panel2); padding:10px 12px; cursor:pointer;
+    display:flex; flex-direction:column; gap:2px }
+  .dopt:hover{ border-color:var(--cyan) }
+  .dopt input{ display:none }
+  .dopt b{ font-size:14px; color:var(--txt); font-weight:400 }
+  .dopt span{ font-size:11px; color:var(--dim) }
+  .dopt:has(input:checked){ border-color:var(--cyan); box-shadow:inset 0 0 12px rgba(0,234,255,.08) }
+  .dopt:has(input:checked) b{ color:var(--cyan) }
+  .dline{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--txt);
+    padding:5px 0; cursor:pointer }
+  .dline input[type=checkbox]{ accent-color:var(--cyan); width:16px; height:16px }
+  #dglow{ flex:1; accent-color:var(--cyan) }
+  #dglow-v{ width:44px; text-align:right; color:var(--cyan); font-size:13px }
+  .mfoot{ display:flex; justify-content:flex-end; padding:12px 18px 16px; border-top:1px solid var(--line) }
+  .mfoot button{ padding:9px 24px; background:var(--panel2); color:var(--cyan);
+    border:1px solid var(--line); cursor:pointer; font-family:inherit; font-size:14px; letter-spacing:2px }
+  .mfoot button:hover{ border-color:var(--cyan) }
+  #menu .opt .hint{ margin-left:auto; font-size:11px; color:var(--dim); letter-spacing:1px }
+
   *{box-sizing:border-box; margin:0; padding:0}
   html,body{height:100%; background:var(--bg); color:var(--txt);
     font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace; overflow:hidden}
@@ -222,14 +332,14 @@
   .energy .v{font-size:26px; color:var(--yel); text-shadow:0 0 10px var(--yel); line-height:1}
   .energy .v.g{color:var(--grn); text-shadow:0 0 10px var(--grn)}
   .energy .k{font-size:11px; color:var(--dim); letter-spacing:2px; margin-top:4px}
-  .energy .w{font-size:15px; color:var(--txt)}
+  .energy .w{font-size:26px; color:var(--txt); line-height:1}
   /* ---------- shellyem3 ---------- */
   .shelly{background:var(--panel2); border:1px solid var(--line); padding:8px 14px; display:flex; gap:20px; align-items:center; position:relative}
   .shelly .tag{font-size:11px; letter-spacing:2px; color:var(--acc2); text-shadow:0 0 8px var(--acc2); white-space:nowrap}
-  .shelly .v{font-size:24px; color:var(--acc); text-shadow:0 0 10px var(--acc); line-height:1}
+  .shelly .v{font-size:24px; color:var(--yel); text-shadow:0 0 10px var(--yel); line-height:1}
   .shelly .v.g{color:var(--grn); text-shadow:0 0 10px var(--grn)}
   .shelly .k{font-size:11px; color:var(--dim); letter-spacing:2px; margin-top:4px}
-  .shelly .w{font-size:15px; color:var(--txt)}
+  .shelly .w{font-size:26px; color:var(--txt); line-height:1}
   .shelly.offline{opacity:.55}
   .shelly.offline .w{color:var(--red)}
 
@@ -292,6 +402,9 @@
   </header>
 
   <div id="menu">
+    <h3>EINSTELLUNGEN</h3>
+    <label class="opt" id="menu-colors">🎨 <b>&nbsp;FARBEN</b><span class="hint">12 Farbwähler →</span></label>
+    <label class="opt" id="menu-design">◈ <b>&nbsp;DESIGN</b><span class="hint">Stil, Font, Diagramme →</span></label>
     <h3>THEME</h3>
     <label class="opt"><input type="radio" name="theme" value="cyber" checked>
       Cyberpunk <span class="swatch"><i style="background:#00eaff"></i><i style="background:#ff2ec4"></i><i style="background:#f6ff4d"></i></span></label>
@@ -311,26 +424,95 @@
       Solarized Light <span class="swatch"><i style="background:#268bd2"></i><i style="background:#859900"></i><i style="background:#eee8d5"></i></span></label>
     <label class="opt"><input type="radio" name="theme" value="custom">
       Eigene Farben <span class="swatch" id="custom-swatch"><i></i><i></i><i></i></span></label>
-    <div class="colors" id="custom-colors" style="display:none">
-      <label><input type="color" data-var="--c-bg"     value="#0b0b14"><span class="lbl">Hintergrund</span></label>
-      <label><input type="color" data-var="--c-panel"  value="#12121f"><span class="lbl">Panel</span></label>
-      <label><input type="color" data-var="--c-panel2" value="#181830"><span class="lbl">Panel 2</span></label>
-      <label><input type="color" data-var="--c-line"   value="#2a2a4a"><span class="lbl">Linien</span></label>
-      <label><input type="color" data-var="--c-txt"    value="#e0e0ff"><span class="lbl">Text</span></label>
-      <label><input type="color" data-var="--c-dim"    value="#6a6a99"><span class="lbl">Text dunkel</span></label>
-      <label><input type="color" data-var="--c-cyan"   value="#00eaff"><span class="lbl">Akzent 1</span></label>
-      <label><input type="color" data-var="--c-mag"    value="#ff2ec4"><span class="lbl">Akzent 2</span></label>
-      <label><input type="color" data-var="--c-yel"    value="#f6ff4d"><span class="lbl">Akzent 3</span></label>
-      <label><input type="color" data-var="--c-grn"    value="#3dff8b"><span class="lbl">OK / RX</span></label>
-      <label><input type="color" data-var="--c-red"    value="#ff3b5c"><span class="lbl">Fehler</span></label>
-      <label><input type="color" data-var="--c-logbg"  value="#06060c"><span class="lbl">Log-Hintergrund</span></label>
+    <div class="soon">Design-Einstellungen bleiben gespeichert.</div>
+  </div>
+
+  <!-- Popup: Farben / Design -->
+  <div id="overlay">
+    <div id="modal">
+      <div class="tabs">
+        <div class="tab" data-mtab="colors">FARBEN</div>
+        <div class="tab" data-mtab="design">DESIGN</div>
+      </div>
+
+      <div class="mtab" id="mtab-colors">
+        <div class="colors">
+          <label><input type="color" data-var="--c-bg"     value="#0b0b14"><span class="lbl">Hintergrund</span></label>
+          <label><input type="color" data-var="--c-panel"  value="#12121f"><span class="lbl">Panel</span></label>
+          <label><input type="color" data-var="--c-panel2" value="#181830"><span class="lbl">Panel 2</span></label>
+          <label><input type="color" data-var="--c-line"   value="#2a2a4a"><span class="lbl">Linien</span></label>
+          <label><input type="color" data-var="--c-txt"    value="#e0e0ff"><span class="lbl">Text</span></label>
+          <label><input type="color" data-var="--c-dim"    value="#6a6a99"><span class="lbl">Text dunkel</span></label>
+          <label><input type="color" data-var="--c-cyan"   value="#00eaff"><span class="lbl">Akzent 1</span></label>
+          <label><input type="color" data-var="--c-mag"    value="#ff2ec4"><span class="lbl">Akzent 2</span></label>
+          <label><input type="color" data-var="--c-yel"    value="#f6ff4d"><span class="lbl">Akzent 3</span></label>
+          <label><input type="color" data-var="--c-grn"    value="#3dff8b"><span class="lbl">OK / RX</span></label>
+          <label><input type="color" data-var="--c-red"    value="#ff3b5c"><span class="lbl">Fehler</span></label>
+          <label><input type="color" data-var="--c-logbg"  value="#06060c"><span class="lbl">Log-Hintergrund</span></label>
+        </div>
+        <div class="actions">
+          <button id="c-reset">Zurücksetzen</button>
+          <button id="c-copy">Farbcode kopieren</button>
+        </div>
+        <div class="soon" style="border-top:none; padding-top:0">Farben greifen nur beim Theme <b>Eigene Farben</b>.</div>
+      </div>
+
+      <div class="mtab" id="mtab-design">
+        <div class="dsec">
+          <h4>SEITENSTIL</h4>
+          <div class="dgrid">
+            <label class="dopt"><input type="radio" name="d-style" value="cyber" checked><b>Cyberpunk</b><span>Neon, Glow, Scanlines</span></label>
+            <label class="dopt"><input type="radio" name="d-style" value="flat"><b>Flat 2D</b><span>Clean, ohne Effekte</span></label>
+            <label class="dopt"><input type="radio" name="d-style" value="depth"><b>3D Depth</b><span>Tiefe, Schatten, Perspektive</span></label>
+            <label class="dopt"><input type="radio" name="d-style" value="dense"><b>btop-Dense</b><span>Kompakt, viel Info</span></label>
+          </div>
+        </div>
+        <div class="dsec">
+          <h4>SCHRIFTART (ZAHLEN)</h4>
+          <div class="dgrid3">
+            <label class="dopt"><input type="radio" name="d-font" value="mono" checked><b>Terminal</b><span>Monospace</span></label>
+            <label class="dopt"><input type="radio" name="d-font" value="7seg"><b>8-Segment</b><span>DSEG7-Digital</span></label>
+            <label class="dopt"><input type="radio" name="d-font" value="retro"><b>Retro</b><span>VT323 Pixel</span></label>
+          </div>
+        </div>
+        <div class="dsec">
+          <h4>DIAGRAMME</h4>
+          <div class="dgrid3">
+            <label class="dopt"><input type="radio" name="d-diagram" value="bars" checked><b>Balken</b><span>wie bisher</span></label>
+            <label class="dopt"><input type="radio" name="d-diagram" value="spark"><b>Sparklines</b><span>Laufgraph 5 min</span></label>
+            <label class="dopt"><input type="radio" name="d-diagram" value="both"><b>Beides</b><span>Balken + Graph</span></label>
+          </div>
+        </div>
+        <div class="dsec">
+          <h4>ANIMATION</h4>
+          <div class="dgrid3">
+            <label class="dopt"><input type="radio" name="d-anim" value="normal" checked><b>Normal</b><span>0,4 s weich</span></label>
+            <label class="dopt"><input type="radio" name="d-anim" value="instant"><b>Ohne</b><span>Sofort</span></label>
+            <label class="dopt"><input type="radio" name="d-anim" value="smooth"><b>Smooth</b><span>0,5 s flüssig</span></label>
+          </div>
+        </div>
+        <div class="dsec">
+          <h4>EFFEKTE</h4>
+          <label class="dline"><input type="checkbox" id="d-scan">Scanlines</label>
+          <label class="dline"><input type="checkbox" id="d-grid">Hintergrund-Gitter</label>
+          <div class="dline" style="cursor:default">
+            <span>Glow</span>
+            <input type="range" id="dglow" min="0" max="100" value="100">
+            <span id="dglow-v">100%</span>
+          </div>
+          <div class="dsec" style="margin-top:10px">
+            <h4>PANEL-ECKEN</h4>
+            <div class="dgrid3">
+              <label class="dopt"><input type="radio" name="d-corners" value="chamfer" checked><b>Chamfer</b><span>abgeschnitten</span></label>
+              <label class="dopt"><input type="radio" name="d-corners" value="round"><b>Rund</b><span>12 px Radius</span></label>
+              <label class="dopt"><input type="radio" name="d-corners" value="square"><b>Scharf</b><span>90°</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mfoot"><button id="m-close">SCHLIESSEN</button></div>
     </div>
-    <div class="actions" id="custom-actions" style="display:none">
-      <button id="c-reset">Zurücksetzen</button>
-      <button id="c-copy">Farbcode kopieren</button>
-    </div>
-    <h3>Weitere Einstellungen</h3>
-    <div class="soon">… bald mehr (Update-Rate, Panels an/aus, Log-Filter)</div>
   </div>
 
   <main>
@@ -341,21 +523,26 @@
         <div>
           <div class="row"><span>CPU</span><b id="cpu-pct">0%</b></div>
           <div class="bar b-cyan"><i id="cpu-bar"></i><div class="ticks"></div></div>
+          <canvas class="spark" id="sp-cpu"></canvas>
         </div>
         <div class="cores" id="cores"></div>
         <div>
           <div class="row"><span>RAM</span><b id="ram-t"></b></div>
           <div class="bar b-mag"><i id="ram-bar"></i><div class="ticks"></div></div>
+          <canvas class="spark" id="sp-ram"></canvas>
         </div>
         <div>
           <div class="row"><span>SWAP</span><b id="sw-t"></b></div>
           <div class="bar b-yel"><i id="sw-bar"></i><div class="ticks"></div></div>
+          <canvas class="spark" id="sp-swap"></canvas>
         </div>
         <div class="net">
           <div class="row"><span>NET RX</span><b id="rx-t">0 B/s</b></div>
           <div class="bar b-grn"><i id="rx-bar"></i><div class="ticks"></div></div>
+          <canvas class="spark" id="sp-rx"></canvas>
           <div class="row"><span>NET TX</span><b id="tx-t">0 B/s</b></div>
           <div class="bar b-cyan"><i id="tx-bar"></i><div class="ticks"></div></div>
+          <canvas class="spark" id="sp-tx"></canvas>
         </div>
         <div class="fill"></div>
         <div class="row" style="margin-bottom:2px"><span>TOP PROZESSE</span></div>
@@ -387,7 +574,7 @@
           <div class="shelly" id="shelly-box">
             <div>
               <div class="tag" id="shelly-state">…</div>
-              <div class="w" id="sh-watts" style="font-size:34px; margin-top:6px">– W</div>
+              <div class="w" id="sh-watts" style="margin-top:6px">– W</div>
               <div class="k">GERADE (GESAMT)</div>
             </div>
             <div>
@@ -441,11 +628,25 @@ const GB=x=>(x/1073741824).toFixed(1)+"G";
 const fmtB=n=>n>=1073741824?(n/1073741824).toFixed(2)+"G/s":n>=1048576?(n/1048576).toFixed(1)+"M/s":n>=1024?(n/1024).toFixed(0)+"K/s":n.toFixed(0)+"B/s";
 const fmtToks=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":String(n);
 
-/* ============ menu / theme ============ */
+/* ============ menu / theme / design ============ */
 const menu=$("menu");
+const overlay=$("overlay");
 $("menu-btn").onclick=e=>{e.stopPropagation(); menu.classList.toggle("open");};
-document.onclick=()=>menu.classList.remove("open");
+document.onclick=()=>{menu.classList.remove("open");};
 menu.onclick=e=>e.stopPropagation();
+overlay.onclick=e=>{ if(e.target===overlay) closeModal(); };
+$("m-close").onclick=closeModal;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeModal(); menu.classList.remove("open"); } });
+function openModal(tab){
+  overlay.classList.add("open");
+  menu.classList.remove("open");
+  document.querySelectorAll("#modal .tab").forEach(t=>t.classList.toggle("active", t.dataset.mtab===tab));
+  document.querySelectorAll(".mtab").forEach(m=>m.classList.toggle("active", m.id==="mtab-"+tab));
+}
+function closeModal(){ overlay.classList.remove("open"); }
+$("menu-colors").onclick=e=>{ e.stopPropagation(); openModal("colors"); };
+$("menu-design").onclick=e=>{ e.stopPropagation(); openModal("design"); };
+document.querySelectorAll("#modal .tab").forEach(t=>t.onclick=()=>openModal(t.dataset.mtab));
 
 const CUSTOM_VARS=["--c-bg","--c-panel","--c-panel2","--c-line","--c-txt","--c-dim",
   "--c-cyan","--c-mag","--c-yel","--c-grn","--c-red","--c-logbg","--c-logtxt"];
@@ -465,28 +666,28 @@ function applyCustom(){
   sw[2].style.background=customColors["--c-yel"];
 }
 function saveCustom(){ localStorage.setItem("sysdash-custom", JSON.stringify(customColors)); }
-function setTheme(t){
+function setTheme(t, silent){
   document.documentElement.dataset.theme=t;
   localStorage.setItem("sysdash-theme",t);
   const r=document.querySelector(`input[name=theme][value=${t}]`); if(r) r.checked=true;
-  const isC=t==="custom";
-  $("custom-colors").style.display=isC?"grid":"none";
-  $("custom-actions").style.display=isC?"flex":"none";
-  if(isC) applyCustom();
+  if(t==="custom"){
+    applyCustom();
+    if(!silent) openModal("colors");
+  }
 }
 /* gespeicherte Werte laden */
 try{
   const savedC=localStorage.getItem("sysdash-custom");
   if(savedC) customColors={...CUSTOM_DEFAULTS,...JSON.parse(savedC)};
 }catch(e){}
-document.querySelectorAll("#custom-colors input[type=color]").forEach(inp=>{
+document.querySelectorAll("#mtab-colors input[type=color]").forEach(inp=>{
   const v=inp.dataset.var;
   if(customColors[v]) inp.value=customColors[v];
   inp.oninput=()=>{customColors[v]=inp.value; applyCustom(); saveCustom();};
 });
 $("c-reset").onclick=()=>{
   customColors={...CUSTOM_DEFAULTS}; saveCustom(); applyCustom();
-  document.querySelectorAll("#custom-colors input[type=color]").forEach(inp=>{
+  document.querySelectorAll("#mtab-colors input[type=color]").forEach(inp=>{
     inp.value=CUSTOM_DEFAULTS[inp.dataset.var];
   });
 };
@@ -498,9 +699,92 @@ $("c-copy").onclick=()=>{
   }).catch(()=>{});
 };
 const savedT=localStorage.getItem("sysdash-theme");
-if(savedT) setTheme(savedT);
-else setTheme("cyber");
-document.querySelectorAll("input[name=theme]").forEach(r=>r.onchange=()=>setTheme(r.value));
+if(savedT) setTheme(savedT, true);
+else setTheme("cyber", true);
+document.querySelectorAll("input[name=theme]").forEach(r=>r.onchange=()=>setTheme(r.value, false));
+
+/* ---- design-optionen ---- */
+const D_DEFAULTS={style:"cyber",font:"mono",diagram:"bars",anim:"normal",corners:"chamfer",
+  glow:100,scan:true,grid:true};
+let D={...D_DEFAULTS};
+try{
+  const s=localStorage.getItem("sysdash-design");
+  if(s) D={...D_DEFAULTS,...JSON.parse(s)};
+}catch(e){}
+function applyDesign(){
+  const r=document.documentElement;
+  r.dataset.style=D.style;
+  r.dataset.font=D.font;
+  r.dataset.diagram=D.diagram;
+  r.dataset.anim=D.anim;
+  r.dataset.corners=D.corners;
+  r.dataset.glow=D.glow<=5?"off":D.glow<70?"soft":"on";
+  r.dataset.scanlines=D.scan?"on":"off";
+  r.dataset.grid=D.grid?"on":"off";
+}
+function saveDesign(){ localStorage.setItem("sysdash-design", JSON.stringify(D)); }
+function designChanged(){ applyDesign(); saveDesign(); }
+function syncDesignUI(){
+  for(const n of ["d-style","d-font","d-diagram","d-anim","d-corners"]){
+    const r=document.querySelector(`input[name=${n}][value=${D[n.slice(2)]}]`); if(r) r.checked=true;
+  }
+  $("d-scan").checked=D.scan;
+  $("d-grid").checked=D.grid;
+  $("dglow").value=D.glow;
+  $("dglow-v").textContent=D.glow+"%";
+}
+document.querySelectorAll("#mtab-design input[name^=d-]").forEach(r=>{
+  r.onchange=()=>{ D[r.name.slice(2)]=r.value; designChanged(); };
+});
+$("d-scan").onchange=e=>{ D.scan=e.target.checked; designChanged(); };
+$("d-grid").onchange=e=>{ D.grid=e.target.checked; designChanged(); };
+$("dglow").oninput=e=>{ D.glow=+e.target.value; $("dglow-v").textContent=D.glow+"%"; designChanged(); };
+syncDesignUI();
+applyDesign();
+
+/* ============ sparklines ============ */
+const SPARK_N=600;                 // 5 min @ 2 Hz
+const sparkBufs={};
+function pushBuf(k,v){
+  const b=sparkBufs[k]||(sparkBufs[k]=[]);
+  b.push(v); if(b.length>SPARK_N) b.shift();
+}
+function sparkColor(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||"#00eaff";
+}
+function drawSpark(cv,buf,cssvar,max){
+  if(!cv||!buf||buf.length<2) return;
+  const w=cv.clientWidth,h=cv.clientHeight; if(!w||!h) return;
+  if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
+  const c=cv.getContext("2d");
+  c.clearRect(0,0,w,h);
+  let m=max;
+  if(m==null){ m=1e-6; for(const v of buf) if(v>m)m=v; }
+  m=Math.max(m,1e-6);
+  const col=sparkColor(cssvar);
+  c.beginPath();
+  for(let i=0;i<buf.length;i++){
+    const x=i/(SPARK_N-1)*w;
+    const y=h-1-(h-3)*Math.min(buf[i]/m,1);
+    i?c.lineTo(x,y):c.moveTo(x,y);
+  }
+  c.strokeStyle=col; c.lineWidth=1.5; c.stroke();
+  c.lineTo((buf.length-1)/(SPARK_N-1)*w,h); c.lineTo(0,h); c.closePath();
+  c.globalAlpha=.14; c.fillStyle=col; c.fill(); c.globalAlpha=1;
+}
+function drawSparks(){
+  if(document.documentElement.dataset.diagram==="bars") return;
+  drawSpark($("sp-cpu"),  sparkBufs["cpu"],  "--cyan", 100);
+  drawSpark($("sp-ram"),  sparkBufs["ram"],  "--mag",  100);
+  drawSpark($("sp-swap"), sparkBufs["swap"], "--yel",  100);
+  drawSpark($("sp-rx"),   sparkBufs["rx"],   "--grn",  Math.max(1048576, ...Object.values(sparkBufs.rx||[1])));
+  drawSpark($("sp-tx"),   sparkBufs["tx"],   "--cyan", Math.max(1048576, ...Object.values(sparkBufs.tx||[1])));
+  for(const k in gpuEls){
+    const e=gpuEls[k];
+    drawSpark(e.spV, sparkBufs["g"+k+"v"], "--mag", 100);
+    drawSpark(e.spU, sparkBufs["g"+k+"u"], "--cyan",100);
+  }
+}
 
 /* ============ cores ============ */
 let coresEl=[];
@@ -517,15 +801,18 @@ function buildGpus(g){
     d.innerHTML=`
       <div class="name"><b>GPU ${x.idx} // ${x.name.replace("NVIDIA GeForce ","")}</b><span></span></div>
       <div><div class="row"><span>VRAM</span><b class="vram-t"></b></div>
-        <div class="bar b-mag"><i class="vram"></i><div class="ticks"></div></div></div>
+        <div class="bar b-mag"><i class="vram"></i><div class="ticks"></div></div>
+        <canvas class="spark spark-gpu"></canvas></div>
       <div><div class="row"><span>UTIL</span><b class="util-t"></b></div>
-        <div class="bar b-cyan"><i class="util"></i><div class="ticks"></div></div></div>
+        <div class="bar b-cyan"><i class="util"></i><div class="ticks"></div></div>
+        <canvas class="spark spark-gpu"></canvas></div>
       <div class="stats"><span>TEMP <b class="temp">–</b></span><span>POWER <b class="pwr">–</b></span><span>FAN <b class="fan">–</b></span></div>`;
     $("gpu-list").appendChild(d);
     gpuEls[x.idx]={vram:d.querySelector(".vram"),vramT:d.querySelector(".vram-t"),
       util:d.querySelector(".util"),utilT:d.querySelector(".util-t"),
       temp:d.querySelector(".temp"),pwr:d.querySelector(".pwr"),fan:d.querySelector(".fan"),
-      tag:d.querySelector(".name span")};
+      tag:d.querySelector(".name span"),
+      spV:d.querySelectorAll(".spark-gpu")[0], spU:d.querySelectorAll(".spark-gpu")[1]};
   }
 }
 function renderGpus(g){
@@ -534,9 +821,12 @@ function renderGpus(g){
   if(Object.keys(gpuEls).length!==g.length) buildGpus(g);
   for(const x of g){
     const e=gpuEls[x.idx]; if(!e) continue;
-    const pct=x.mem_used/x.mem_total*100;
-    e.vram.style.width=pct+"%"; e.vramT.textContent=GB(x.mem_used)+" / "+GB(x.mem_total);
+    const pct=x.mem_total>0?x.mem_used/x.mem_total*100:0;
+    e.vram.style.width=pct+"%";
+    // nvidia-smi liefert MiB – korrekt nach GB umrechnen
+    e.vramT.textContent=(x.mem_used/1024).toFixed(1)+"G / "+(x.mem_total/1024).toFixed(1)+"G";
     e.util.style.width=x.util+"%"; e.utilT.textContent=x.util.toFixed(0)+"%";
+    pushBuf("g"+x.idx+"v", pct); pushBuf("g"+x.idx+"u", x.util);
     e.temp.textContent=x.temp+"°C"; e.temp.className="temp"+(x.temp>=85?" crit":x.temp>=75?" warn":"");
     e.pwr.textContent=x.power.toFixed(0)+"W";
     e.fan.textContent=x.fan.toFixed(0)+"%";
@@ -560,17 +850,21 @@ function stats(){
     $("cpu-pct").textContent=d.cpu.pct.toFixed(0)+"%";
     $("cpu-bar").style.width=d.cpu.pct+"%";
     $("cpu-bar").parentElement.classList.toggle("hot",d.cpu.pct>90);
+    pushBuf("cpu", d.cpu.pct);
     d.cpu.cores.forEach((c,i)=>{if(coresEl[i])coresEl[i].style.height=Math.max(3,c)+"%";});
     $("ram-t").textContent=GB(d.ram.used)+" / "+GB(d.ram.total)+"  ("+d.ram.pct.toFixed(0)+"%)";
     $("ram-bar").style.width=d.ram.pct+"%";
+    pushBuf("ram", d.ram.pct);
     $("sw-t").textContent=GB(d.swap.used)+" / "+GB(d.swap.total);
     $("sw-bar").style.width=d.swap.total?d.swap.pct+"%":"0%";
+    pushBuf("swap", d.swap.total?d.swap.pct:0);
     $("sys-load").textContent="LOAD "+d.load.map(x=>x.toFixed(2)).join(" ");
-    const NB=500*1048576;
+    const NB=23*1048576;   /* Vollskala 23 MB/s (Praxis-Max) */
     $("rx-t").textContent=fmtB(d.net.rx);
     $("tx-t").textContent=fmtB(d.net.tx);
     $("rx-bar").style.width=Math.min(100,d.net.rx/NB*100)+"%";
     $("tx-bar").style.width=Math.min(100,d.net.tx/NB*100)+"%";
+    pushBuf("rx", d.net.rx); pushBuf("tx", d.net.tx);
     /* energie (GPU, selbst gemessen) */
     if(d.energy){
       $("e-watts").textContent=d.energy.watts.toFixed(0)+" W";
@@ -613,6 +907,7 @@ function stats(){
     renderGpus(d.gpus);
     renderLlm(d.llm);
     renderWeather(d.weather);
+    drawSparks();
   };
   ws.onerror=()=>ws.close();
   setTimeout(()=>{if(ws.readyState>1)stats();},2000);
