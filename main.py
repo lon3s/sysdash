@@ -26,10 +26,14 @@ SHELLEY_FILE = Path(__file__).parent / "shelly.json"
 SHELLEY_URL = os.environ.get("SYSDASH_SHELLY", "http://192.168.178.21")
 JOURNAL_LOGS = ["journalctl", "-u", "llama-cpp", "-f", "--no-pager", "-n", "200"]
 SLOTS_URL = "http://127.0.0.1:9070/slots"
-WEATHER_URL = ("https://api.open-meteo.com/v1/forecast"
-               "?latitude=51.10&longitude=7.35"
-               "&hourly=temperature_2m,precipitation_probability,weather_code"
-               "&timezone=Europe%2FBerlin&forecast_hours=14")
+WEATHER_URL = (
+    "https://api.open-meteo.com/v1/forecast"
+    "?latitude=51.10&longitude=7.35"
+    "&hourly=temperature_2m,precipitation_probability,weather_code"
+    "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,"
+    "precipitation_probability_max,weathercode"
+    "&timezone=Europe%2FBerlin&forecast_days=7&forecast_hours=14"
+)
 
 app = FastAPI()
 
@@ -320,17 +324,30 @@ def _weather_refresh():
             ["curl", "-s", "-m", "5", WEATHER_URL],
             capture_output=True, text=True, timeout=10,
         ).stdout.strip()
-        d = json.loads(out)["hourly"]
+        j = json.loads(out)
+        h = j["hourly"]
         hours = [
             {
                 "time": t,
-                "temp": float(d["temperature_2m"][i]),
-                "rain": float(d["precipitation_probability"][i]),
-                "code": int(d["weather_code"][i]),
+                "temp": float(h["temperature_2m"][i]),
+                "rain": float(h["precipitation_probability"][i]),
+                "code": int(h["weather_code"][i]),
+            }
+            for i, t in enumerate(h["time"])
+        ]
+        d = j["daily"]
+        days = [
+            {
+                "time": t,
+                "tmin": float(d["temperature_2m_min"][i]),
+                "tmax": float(d["temperature_2m_max"][i]),
+                "sum": float(d["precipitation_sum"][i]),
+                "pmax": d["precipitation_probability_max"][i],
+                "code": int(d["weathercode"][i]),
             }
             for i, t in enumerate(d["time"])
         ]
-        _weather.update({"online": True, "updated": time.time(), "hours": hours})
+        _weather.update({"online": True, "updated": time.time(), "hours": hours, "days": days})
         return True
     except Exception:
         _weather["online"] = False
