@@ -385,6 +385,13 @@
     color:var(--dim); background:rgba(10,14,23,.85); border:1px solid var(--line); padding:3px 8px; pointer-events:none}
   .wx-radar-fail{position:absolute; inset:0; display:none; align-items:center; justify-content:center;
     color:var(--dim); font-size:13px; letter-spacing:1px; text-align:center; padding:20px}
+  /* Remscheid-Pin */
+  .rx-pin{position:relative; width:100%; height:100%}
+  .rx-pin span{display:inline-block; padding:3px 8px; font-size:10px; letter-spacing:2px; font-weight:700;
+    color:#0a0e17; background:var(--yel); border:1px solid #000; border-radius:3px;
+    box-shadow:0 0 8px rgba(246,255,77,.5); white-space:nowrap}
+  .rx-pin::after{content:""; position:absolute; left:50%; bottom:-12px; width:2px; height:8px; background:var(--yel); transform:translateX(-1px)}
+  .rx-pin::before{content:""; position:absolute; left:50%; bottom:-15px; width:6px; height:6px; background:var(--yel); border-radius:50%; transform:translateX(-3px); box-shadow:0 0 6px var(--yel)}
 </style>
 </head>
 <body>
@@ -1064,6 +1071,10 @@ function initRadar(){
       transparent:true, format:"image/png", version:"1.1.1", maxZoom:12
     }).addTo(map);
     radar.on("tileload",()=>$("wx-radar-fail").style.display="none");
+    // Remscheid: Pin + Label
+    const pin=L.marker([51.1798,7.1925],{
+      icon:L.divIcon({className:"rx-pin", html:"<span>REMSCHEID</span>", iconSize:[96,18], iconAnchor:[48,33]})
+    }).addTo(map);
     // Radar alle 5 min auffrischen (WMS liefert immer "aktuell") — nur wenn Tab sichtbar
     setInterval(()=>{ if(!document.hidden) map.invalidateSize(); }, 300000);
   }catch(e){
