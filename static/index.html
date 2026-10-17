@@ -317,6 +317,7 @@
   .energy .v.g{color:var(--grn); text-shadow:0 0 10px var(--grn)}
   .energy .k{font-size:11px; color:var(--dim); letter-spacing:2px; margin-top:4px}
   .energy .w{font-size:26px; color:var(--txt); line-height:1}
+  .cost{font-size:13px; color:var(--grn); margin-top:3px; letter-spacing:1px; text-shadow:0 0 6px rgba(80,255,140,.4)}
   /* ---------- shellyem3 ---------- */
   .shelly{background:var(--panel2); border:1px solid var(--line); padding:8px 14px; display:flex; gap:20px; align-items:center; position:relative}
   .shelly .tag{font-size:11px; letter-spacing:2px; color:var(--acc2); text-shadow:0 0 8px var(--acc2); white-space:nowrap}
@@ -588,8 +589,8 @@
         <div class="body">
           <div class="energy">
             <div><div class="w" id="e-watts">– W</div><div class="k">GERADE</div></div>
-            <div><div class="v" id="e-today">0.000</div><div class="k">HEUTE (KWH)</div></div>
-            <div><div class="v g" id="e-total">0.000</div><div class="k">GESAMT (KWH)</div></div>
+            <div><div class="v" id="e-today">0.000</div><div class="k">HEUTE (KWH)</div><div class="cost" id="e-today-cost">0,00 €</div></div>
+            <div><div class="v g" id="e-total">0.000</div><div class="k">GESAMT (KWH)</div><div class="cost" id="e-total-cost">0,00 €</div></div>
           </div>
           <div class="fill" style="flex:none"></div>
           <div id="gpu-list" style="display:flex; flex-direction:column; gap:12px; min-height:0"></div>
@@ -609,10 +610,12 @@
             <div>
               <div class="v" id="sh-today">0.000</div>
               <div class="k">HEUTE (KWH)</div>
+              <div class="cost" id="sh-today-cost">0,00 €</div>
             </div>
             <div>
               <div class="v g" id="sh-total">0.000</div>
-              <div class="k">GESAMT (KWH)</div>
+              <div class="k">GESAMT (KWH, OHNE 3600)</div>
+              <div class="cost" id="sh-total-cost">0,00 €</div>
             </div>
           </div>
           <div class="fill"></div>
@@ -667,6 +670,8 @@ const $=id=>document.getElementById(id);
 const GB=x=>(x/1073741824).toFixed(1)+"G";
 const fmtB=n=>n>=1073741824?(n/1073741824).toFixed(2)+"G/s":n>=1048576?(n/1048576).toFixed(1)+"M/s":n>=1024?(n/1024).toFixed(0)+"K/s":n.toFixed(0)+"B/s";
 const fmtToks=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":String(n);
+const KWH_PRICE=0.35;   // €/kWh
+const fmtEuro=kwh=>(kwh*KWH_PRICE).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 
 /* ============ menu / theme / design ============ */
 const menu=$("menu");
@@ -909,7 +914,9 @@ function stats(){
     if(d.energy){
       $("e-watts").textContent=d.energy.watts.toFixed(0)+" W";
       $("e-today").textContent=(d.energy.today_wh/1000).toFixed(3);
+      $("e-today-cost").textContent=fmtEuro(d.energy.today_wh/1000);
       $("e-total").textContent=(d.energy.total_wh/1000).toFixed(3);
+      $("e-total-cost").textContent=fmtEuro(d.energy.total_wh/1000);
     }
     /* shellyem3 (Zähler am Stromkasten) */
     if(d.shelly){
@@ -918,7 +925,11 @@ function stats(){
       $("shelly-state").textContent=d.shelly.online?"ONLINE":"OFFLINE";
       $("sh-watts").textContent=d.shelly.online?d.shelly.watts.toFixed(0)+" W":"– W";
       $("sh-today").textContent=(d.shelly.today_wh/1000).toFixed(3);
-      $("sh-total").textContent=(d.shelly.total_wh/1000).toFixed(3);
+      $("sh-today-cost").textContent=fmtEuro(d.shelly.today_wh/1000);
+      /* Gesamt abzgl. 3600 kWh Altdaten (Zähler wurde 2025 nicht zurückgesetzt) */
+      const shTotalKwh=Math.max(0,(d.shelly.total_wh-3600000))/1000;
+      $("sh-total").textContent=shTotalKwh.toFixed(3);
+      $("sh-total-cost").textContent=fmtEuro(shTotalKwh);
       const ph=$("sh-phases");
       const arr=d.shelly.phases||[];
       if(ph.children.length!==arr.length){
