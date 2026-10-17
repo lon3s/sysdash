@@ -363,7 +363,11 @@
   /* ---------- wetter panel ---------- */
   .stack .p-llm{flex:1.6; min-height:0}
   .stack .p-wx{flex:1; min-height:0}
+  .stack .p-sys{flex:1.4; min-height:0}
+  .stack .p-wx-left{flex:1; min-height:0}
+  .stack .p-proc{flex:1; min-height:0}
   .p-wx h2 b{color:var(--cyan)}
+  .p-proc h2 b{color:var(--yel)}
   .p-wx .body{gap:8px; padding:10px 14px}
   .wx-days{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; padding:8px 10px}
   .wx-day{display:flex; flex-direction:column; align-items:center; gap:3px;
@@ -527,6 +531,8 @@
   </div>
 
   <main>
+    <!-- SYSTEM + WETTER (gemeinsame Spalte, übereinander) -->
+    <div class="stack">
     <!-- SYSTEM -->
     <section class="panel p-sys">
       <h2><b>▚ SYSTEM</b><span id="sys-load"></span></h2>
@@ -556,11 +562,23 @@
           <canvas class="spark" id="sp-tx"></canvas>
         </div>
         <div class="fill"></div>
-        <div class="row" style="margin-bottom:2px"><span>TOP PROZESSE</span></div>
-        <table><thead><tr><th>PROZESS</th><th>CPU%</th><th>RAM%</th></tr></thead>
-        <tbody id="procs"></tbody></table>
       </div>
     </section>
+
+    <!-- WETTER (7 Tage + DWD-Radar) -->
+    <section class="panel p-wx p-wx-left" id="wx-panel">
+      <h2><b>▚ WETTER REMSCHEID</b><span id="wx-upd">–</span></h2>
+      <div class="body">
+        <div class="wx-days" id="wx-days">
+          <div class="wx-day"><span class="dow">…</span><span class="ic">–</span><span class="tv">–</span><span class="rr">–</span></div>
+        </div>
+        <div class="wx-radar" id="wx-radar">
+          <span class="wx-radartag">RADAR · DWD</span>
+          <div class="wx-radar-fail" id="wx-radar-fail">RADAR UNVERFÜGBAR</div>
+        </div>
+      </div>
+    </section>
+    </div>
 
     <!-- GPU + SHELLYEM3 (gemeinsame Spalte, übereinander) -->
     <div class="stack">
@@ -632,17 +650,12 @@
       </div>
     </section>
 
-    <!-- WETTER (7 Tage + DWD-Radar) -->
-    <section class="panel p-wx" id="wx-panel">
-      <h2><b>▚ WETTER REMSCHEID</b><span id="wx-upd">–</span></h2>
+    <!-- TOP PROZESSE (früher in SYSTEM) -->
+    <section class="panel p-proc" id="proc-panel">
+      <h2><b>▚ TOP PROZESSE</b><span></span></h2>
       <div class="body">
-        <div class="wx-days" id="wx-days">
-          <div class="wx-day"><span class="dow">…</span><span class="ic">–</span><span class="tv">–</span><span class="rr">–</span></div>
-        </div>
-        <div class="wx-radar" id="wx-radar">
-          <span class="wx-radartag">RADAR · DWD</span>
-          <div class="wx-radar-fail" id="wx-radar-fail">RADAR UNVERFÜGBAR</div>
-        </div>
+        <table><thead><tr><th>PROZESS</th><th>CPU%</th><th>RAM%</th></tr></thead>
+        <tbody id="procs"></tbody></table>
       </div>
     </section>
     </div>
