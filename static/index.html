@@ -1075,8 +1075,12 @@ function initRadar(){
     const pin=L.marker([51.1798,7.1925],{
       icon:L.divIcon({className:"rx-pin", html:"<span>REMSCHEID</span>", iconSize:[96,18], iconAnchor:[48,33]})
     }).addTo(map);
-    // Radar alle 5 min auffrischen (WMS liefert immer "aktuell") — nur wenn Tab sichtbar
-    setInterval(()=>{ if(!document.hidden) map.invalidateSize(); }, 300000);
+    // Radar alle 5 Min. neu von DWD laden (Timestamp zwingt Cache-Bypass)
+    setInterval(()=>{
+      if(document.hidden)return;
+      const u=radar.getUrl().replace(/[?&]_ts=\d+/,"");
+      radar.setUrl(u+(u.includes("?")?"&":"?")+"_ts="+Date.now());
+    }, 300000);
   }catch(e){
     $("wx-radar-fail").style.display="flex";
   }
