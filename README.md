@@ -4,9 +4,9 @@ System-Dashboard für den 2. Bildschirm: CPU/RAM/GPU/Netz in Echtzeit,
 LLM-Telemetrie, Stromverbrauch (GPU + ShellyEM3), Wetter und Regenradar
 mit Zeitraffer bis +12 h.
 
-![Demo-Animation](assets/demo.gif)
+![Demo-Animation](assets/demo-2026-10.gif)
 
-![Screenshot](assets/screenshot.png)
+![Screenshot](assets/screenshot-2026-10.png)
 
 ## Features
 
