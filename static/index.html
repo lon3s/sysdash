@@ -389,8 +389,28 @@
   .wx-radar .leaflet-control-zoom a{background:var(--panel)!important; color:var(--cyan)!important; border-color:var(--line)!important}
   .wx-radartag{position:absolute; top:6px; right:6px; z-index:800; font-size:10px; letter-spacing:2px;
     color:var(--dim); background:rgba(10,14,23,.85); border:1px solid var(--line); padding:3px 8px; pointer-events:none}
-  .wx-radar-fail{position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-    color:var(--dim); font-size:13px; letter-spacing:1px; text-align:center; padding:20px}
+  .wx-radar-fail{position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:700;
+    color:var(--dim); font-size:13px; letter-spacing:1px; text-align:center; padding:20px; pointer-events:none}
+  .wx-radar .leaflet-image-layer{transition:opacity .35s ease}
+  .wx-radar .leaflet-bottom{bottom:40px}
+  /* Zeitraffer-Steuerung: Messung (cyan) → Nowcast (gelb) → Modell (magenta) */
+  .rx-ctl{position:absolute; left:6px; right:6px; bottom:6px; z-index:800; display:flex; align-items:center; gap:10px;
+    padding:5px 10px 5px 5px; background:rgba(10,14,23,.85); border:1px solid var(--line)}
+  .rx-ctl button{flex:none; width:26px; height:26px; border:1px solid var(--line); background:transparent;
+    color:var(--cyan); cursor:pointer; font-size:11px; line-height:1}
+  .rx-ctl button:hover{border-color:var(--cyan)}
+  .rx-info{flex:none; width:118px; display:flex; flex-direction:column; line-height:1.15}
+  .rx-info b{font-size:13px; color:var(--txt); font-weight:600}
+  .rx-info span{font-size:9px; letter-spacing:1.5px; color:var(--dim); white-space:nowrap}
+  .rx-info span.radar{color:var(--cyan)} .rx-info span.nowcast{color:var(--yel)} .rx-info span.model{color:var(--mag)}
+  .rx-track{flex:1; display:flex; gap:2px; height:18px; align-items:center; cursor:pointer}
+  .rx-track i{flex:1; height:6px; background:currentColor; opacity:.18; transition:height .25s, opacity .25s}
+  .rx-track i.radar{color:var(--cyan)} .rx-track i.nowcast{color:var(--yel)} .rx-track i.model{color:var(--mag)}
+  .rx-track i.ok{opacity:.5} .rx-track i.on{opacity:1; height:14px}
+  .rx-track i.now{box-shadow:0 0 0 1px var(--txt)}
+  [data-style="modern"] .rx-ctl{border-radius:10px; border-color:var(--edge); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+  [data-style="modern"] .rx-ctl button{border-radius:50%; border-color:var(--edge)}
+  [data-style="modern"] .rx-track i{border-radius:3px}
   /* Remscheid-Pin */
   .rx-pin{position:relative; width:100%; height:100%}
   .rx-pin span{display:inline-block; padding:3px 8px; font-size:10px; letter-spacing:2px; font-weight:700;
@@ -398,6 +418,191 @@
     box-shadow:0 0 8px rgba(0,127,255,.45); white-space:nowrap}
   .rx-pin::after{content:""; position:absolute; left:50%; bottom:-12px; width:2px; height:8px; background:#007fff; transform:translateX(-1px)}
   .rx-pin::before{content:""; position:absolute; left:50%; bottom:-15px; width:6px; height:6px; background:#007fff; border-radius:50%; transform:translateX(-3px); box-shadow:0 0 6px #007fff}
+
+  /* ---------- menü / popup: weiches Öffnen (alle Stile) ---------- */
+  #menu.open{animation:menuIn .28s cubic-bezier(.22,1,.36,1)}
+  #overlay.open{animation:fadeIn .25s ease}
+  #overlay.open #modal{animation:modalIn .38s cubic-bezier(.22,1,.36,1)}
+  @keyframes menuIn{from{opacity:0; transform:translateY(-8px) scale(.98)}}
+  @keyframes modalIn{from{opacity:0; transform:translateY(14px) scale(.97)}}
+  @keyframes fadeIn{from{opacity:0}}
+  .glyph{font-style:normal}
+
+  /* ============ SEITENSTIL: MODERN (Glas, Aurora, weiche Animationen) ============ */
+  @font-face{font-family:"Inter"; src:url("fonts/Inter-var.woff2") format("woff2"); font-weight:100 900; font-display:swap}
+  @font-face{font-family:"JetBrains Mono"; src:url("fonts/JetBrainsMono-var.woff2") format("woff2"); font-weight:100 800; font-display:swap}
+  [data-style="modern"]{
+    --r:16px; --ease:cubic-bezier(.22,1,.36,1); --shadow:rgba(0,0,0,.55);
+    --glass:color-mix(in srgb, var(--panel) 72%, transparent);
+    --glass2:color-mix(in srgb, var(--panel2) 58%, transparent);
+    --edge:color-mix(in srgb, var(--txt) 10%, transparent);
+    --tint:color-mix(in srgb, var(--txt) 3.5%, transparent);
+  }
+  [data-style="modern"][data-theme="paper"], [data-style="modern"][data-theme="solar-light"]{ --shadow:rgba(15,23,42,.14) }
+  [data-style="modern"][data-font="mono"] body{ font-family:"Inter",system-ui,sans-serif }
+  [data-style="modern"] body{ font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased }
+  [data-style="modern"] :is(.logs,.model,.panel h2 span,td){ font-family:"JetBrains Mono",monospace }
+
+  /* Hintergrund: langsam wandernde Farbwolken statt Scanlines/Gitter */
+  [data-style="modern"] body::before{ display:none }
+  [data-style="modern"] body::after{
+    inset:-25%;
+    background:
+      radial-gradient(38% 34% at 18% 22%, color-mix(in srgb,var(--cyan) 17%,transparent), transparent 70%),
+      radial-gradient(34% 40% at 82% 18%, color-mix(in srgb,var(--mag) 14%,transparent), transparent 70%),
+      radial-gradient(44% 38% at 58% 88%, color-mix(in srgb,var(--grn) 9%,transparent), transparent 70%);
+    animation:aurora 45s ease-in-out infinite alternate; will-change:transform;
+  }
+  @keyframes aurora{
+    0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}
+    50%{transform:translate3d(4%,-3%,0) rotate(7deg) scale(1.08)}
+    100%{transform:translate3d(-3%,4%,0) rotate(-5deg) scale(1.03)}
+  }
+
+  /* Header */
+  [data-style="modern"] header h1{ font-weight:800; font-size:32px; letter-spacing:7px; text-shadow:none;
+    background:linear-gradient(90deg,var(--cyan),var(--mag),var(--yel),var(--cyan)); background-size:300% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:shine 12s linear infinite;
+    filter:drop-shadow(0 0 16px color-mix(in srgb,var(--cyan) 30%,transparent)) }
+  [data-style="modern"] header h1 span{ color:transparent; text-shadow:none }
+  @keyframes shine{to{background-position:300% 0}}
+  [data-style="modern"] header .sub{ font-size:11px; font-weight:600; letter-spacing:3px }
+  [data-style="modern"] #clock{ font-weight:600; font-size:34px; letter-spacing:2px;
+    text-shadow:0 0 24px color-mix(in srgb,var(--yel) 45%,transparent) }
+  [data-style="modern"] #date{ font-size:12px; font-weight:600; letter-spacing:4px; margin-top:4px;
+    text-shadow:none; opacity:.85 }
+  [data-style="modern"] .conn{ padding:7px 14px; border-radius:999px; background:var(--glass);
+    border:1px solid var(--edge); font-size:11px; font-weight:600; letter-spacing:2px; gap:8px }
+  [data-style="modern"] .conn i{ width:8px; height:8px }
+  [data-style="modern"] .conn.on i{ animation:breathe 2.4s ease-in-out infinite }
+  @keyframes breathe{50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--grn) 22%,transparent), 0 0 10px var(--grn)}}
+  [data-style="modern"] #menu-btn{ border-radius:12px; background:var(--glass); border-color:var(--edge);
+    width:40px; height:40px; padding:0; font-size:19px; transition:transform .6s var(--ease), border-color .3s }
+  [data-style="modern"] #menu-btn:hover{ transform:rotate(90deg); border-color:var(--cyan) }
+
+  /* Panels: Glas, weiche Kanten, gestaffeltes Einblenden */
+  [data-style="modern"] .panel{ clip-path:none; border-radius:var(--r); overflow:hidden;
+    background:linear-gradient(160deg, var(--glass), var(--glass2));
+    border:1px solid var(--edge);
+    box-shadow:0 14px 34px -16px var(--shadow), inset 0 1px 0 color-mix(in srgb,var(--txt) 7%,transparent);
+    transition:border-color .45s var(--ease), box-shadow .45s var(--ease);
+    animation:panelIn .9s var(--ease) both; animation-delay:calc(var(--i,0) * 80ms) }
+  [data-style="modern"] .panel::before{ content:""; position:absolute; top:0; left:12%; right:12%; height:1px; z-index:2;
+    background:linear-gradient(90deg,transparent,var(--pc),transparent); opacity:.55; pointer-events:none }
+  [data-style="modern"] .panel:hover{ border-color:color-mix(in srgb,var(--pc) 32%,transparent);
+    box-shadow:0 18px 44px -16px var(--shadow), 0 0 26px -10px color-mix(in srgb,var(--pc) 45%,transparent),
+      inset 0 1px 0 color-mix(in srgb,var(--txt) 7%,transparent) }
+  @keyframes panelIn{from{opacity:0; transform:translateY(16px)}}
+  .p-sys,.p-wx{--pc:var(--cyan)} .p-gpu{--pc:var(--mag)} .p-llm,.p-proc{--pc:var(--yel)} .p-shelly{--pc:var(--grn)}
+  [data-style="modern"] .panel h2{ font-size:12px; font-weight:600; letter-spacing:2.5px;
+    padding:15px 18px 13px; border-bottom:1px solid var(--edge) }
+  [data-style="modern"] .panel h2 b{ display:flex; align-items:center; gap:11px; color:var(--txt); font-weight:700 }
+  [data-style="modern"] .panel h2 b::before{ content:""; width:8px; height:8px; border-radius:50%; flex:none;
+    background:var(--pc); box-shadow:0 0 0 4px color-mix(in srgb,var(--pc) 16%,transparent), 0 0 12px var(--pc) }
+  [data-style="modern"] .panel h2 span{ font-size:11px; letter-spacing:1px; font-weight:500 }
+  [data-style="modern"] .glyph{ display:none }
+  [data-style="modern"] .body{ padding:16px 18px }
+
+  /* Innere Karten */
+  [data-style="modern"] :is(.net,.gpu,.energy,.shelly,.big,.progress-wrap){ border-radius:12px;
+    background:var(--tint); border:1px solid var(--edge);
+    transition:transform .4s var(--ease), border-color .4s var(--ease), background .4s }
+  [data-style="modern"] :is(.net,.gpu,.energy,.shelly,.big,.progress-wrap):hover{ transform:translateY(-2px);
+    border-color:color-mix(in srgb,var(--pc) 35%,transparent); background:color-mix(in srgb,var(--txt) 5.5%,transparent) }
+  [data-style="modern"] .row{ font-size:13px; font-weight:500; letter-spacing:.5px }
+  [data-style="modern"] .row b{ font-weight:600 }
+
+  /* Balken: Pille mit Verlauf + Schimmer */
+  [data-style="modern"] .bar{ height:10px; margin-top:7px; border:none; border-radius:999px; overflow:hidden;
+    background:color-mix(in srgb,var(--txt) 8%,transparent) }
+  [data-style="modern"] .bar .ticks{ display:none }
+  [data-style="modern"] .bar i{ inset:0 auto 0 0; border-radius:inherit; box-shadow:none; overflow:hidden;
+    background:linear-gradient(90deg, color-mix(in srgb,currentColor 40%,transparent), currentColor);
+    transition:width .8s var(--ease) }
+  [data-style="modern"] .bar i::after{ content:""; position:absolute; inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);
+    transform:translateX(-100%); animation:sheen 3.2s var(--ease) infinite }
+  @keyframes sheen{60%,100%{transform:translateX(100%)}}
+  [data-style="modern"] .progress-wrap .bar{ height:12px }
+  [data-style="modern"] .net .bar{ height:8px }
+  [data-style="modern"] .cores{ height:44px; gap:4px }
+  [data-style="modern"] .cores i{ border-radius:4px 4px 2px 2px; box-shadow:none;
+    background:linear-gradient(to top, color-mix(in srgb,var(--cyan) 30%,transparent), var(--cyan));
+    transition:height .7s var(--ease) }
+  [data-style="modern"] .spark{ border-radius:8px; border-color:var(--edge) }
+
+  /* Zahlen */
+  [data-style="modern"] :is(.energy,.shelly,.big) .v, [data-style="modern"] :is(.energy,.shelly) .w{
+    font-weight:650; letter-spacing:-.5px; text-shadow:0 0 22px color-mix(in srgb,currentColor 35%,transparent) }
+  [data-style="modern"] :is(.energy,.shelly,.big) .k{ font-size:10px; font-weight:600; letter-spacing:1.6px; margin-top:6px }
+  [data-style="modern"] .cost{ display:inline-block; margin-top:7px; padding:2px 9px; border-radius:999px;
+    font-size:12px; font-weight:600; text-shadow:none; background:color-mix(in srgb,currentColor 13%,transparent) }
+  [data-style="modern"] .shelly .tag{ display:inline-flex; align-items:center; gap:7px; padding:3px 10px; border-radius:999px;
+    font-weight:700; text-shadow:none; color:var(--grn); background:color-mix(in srgb,var(--grn) 13%,transparent) }
+  [data-style="modern"] .shelly .tag::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor;
+    animation:blink 2s ease-in-out infinite }
+  [data-style="modern"] .shelly.offline .tag{ color:var(--red); background:color-mix(in srgb,var(--red) 13%,transparent) }
+  @keyframes blink{50%{opacity:.25}}
+  [data-style="modern"] .gpu .name b{ text-shadow:none; font-weight:700; letter-spacing:1px }
+  [data-style="modern"] .stats{ font-size:12px; font-weight:500 }
+
+  /* LLM-Status: pulsierender Ring, grau wenn offline */
+  [data-style="modern"] .led{ width:22px; height:22px; position:relative; color:var(--grn); box-shadow:0 0 16px var(--grn) }
+  [data-style="modern"] .led::after{ content:""; position:absolute; inset:-7px; border-radius:50%;
+    border:2px solid currentColor; animation:ring 2.4s var(--ease) infinite }
+  [data-style="modern"] .led.busy{ color:var(--mag); animation:none }
+  [data-style="modern"] .led.busy::after{ animation-duration:1s }
+  [data-style="modern"] .llm-top:has(.state.off) .led{ background:var(--dim); box-shadow:none; color:var(--dim) }
+  [data-style="modern"] .llm-top:has(.state.off) .led::after{ animation:none; opacity:0 }
+  @keyframes ring{from{transform:scale(.6); opacity:.9} to{transform:scale(1.9); opacity:0}}
+  [data-style="modern"] .state{ font-size:26px; font-weight:700; letter-spacing:3px }
+
+  /* Wetter */
+  [data-style="modern"] .wx-days{ padding:2px 0 4px; gap:7px }
+  [data-style="modern"] .wx-day{ border-radius:12px; border:1px solid var(--edge); background:var(--tint);
+    transition:transform .4s var(--ease), border-color .4s; animation:panelIn .7s var(--ease) both }
+  [data-style="modern"] .wx-day:hover{ transform:translateY(-3px); border-color:color-mix(in srgb,var(--cyan) 40%,transparent) }
+  [data-style="modern"] .wx-day.now{ border-color:color-mix(in srgb,var(--yel) 55%,transparent);
+    background:linear-gradient(180deg,color-mix(in srgb,var(--yel) 14%,transparent),transparent) }
+  [data-style="modern"] .wx-day.now .ic{ animation:float 4s ease-in-out infinite }
+  [data-style="modern"] .wx-day .dow{ font-weight:700; font-size:10px }
+  [data-style="modern"] .wx-day .tv{ font-weight:600 }
+  [data-style="modern"] .wx-day .ic{ font-size:24px; filter:drop-shadow(0 3px 6px rgba(0,0,0,.35)) }
+  @keyframes float{50%{transform:translateY(-3px)}}
+  [data-style="modern"] .wx-day:nth-child(2){animation-delay:40ms}  [data-style="modern"] .wx-day:nth-child(3){animation-delay:80ms}
+  [data-style="modern"] .wx-day:nth-child(4){animation-delay:120ms} [data-style="modern"] .wx-day:nth-child(5){animation-delay:160ms}
+  [data-style="modern"] .wx-day:nth-child(6){animation-delay:200ms} [data-style="modern"] .wx-day:nth-child(7){animation-delay:240ms}
+  [data-style="modern"] .wx-radar{ border-radius:12px; border-color:var(--edge) }
+  [data-style="modern"] .wx-radar .leaflet-control-zoom{ border:none!important; border-radius:10px; overflow:hidden }
+  [data-style="modern"] .wx-radartag{ border-radius:999px; font-weight:600; padding:4px 10px; border-color:var(--edge) }
+  [data-style="modern"] .leaflet-image-layer{ transition:opacity .6s ease }
+
+  /* Tabelle + Logs */
+  [data-style="modern"] td, [data-style="modern"] th{ border-bottom:1px solid var(--edge); padding:6px 8px }
+  [data-style="modern"] th{ font-family:inherit; font-size:10px; font-weight:700 }
+  [data-style="modern"] td{ font-size:13px }
+  [data-style="modern"] tbody tr:hover td{ background:var(--tint) }
+  [data-style="modern"] .logs{ border-radius:12px; border-color:var(--edge) }
+  [data-style="modern"] .logs .inner{ font-size:12.5px }
+  [data-style="modern"] .ln{ animation:lnIn .4s var(--ease) }
+  @keyframes lnIn{from{opacity:0; transform:translateX(-6px)}}
+  [data-style="modern"] #logsbar{ border-bottom-color:var(--edge); font-size:10px; font-weight:700 }
+
+  /* Menü + Popup im Glas-Look */
+  [data-style="modern"] #menu, [data-style="modern"] #modal{ clip-path:none; border-radius:16px;
+    border-color:var(--edge); background:color-mix(in srgb,var(--panel) 86%,transparent);
+    -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px); box-shadow:0 24px 60px -20px var(--shadow) }
+  [data-style="modern"] #overlay{ -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); background:rgba(2,4,10,.45) }
+  [data-style="modern"] #modal .tabs{ background:transparent }
+  [data-style="modern"] #menu .opt{ margin:2px 8px; border-radius:10px; transition:background .2s }
+  [data-style="modern"] :is(.dopt,#modal .actions button,.mfoot button){ border-radius:10px;
+    transition:border-color .25s, background .25s, transform .25s var(--ease) }
+  [data-style="modern"] .dopt:hover{ transform:translateY(-1px) }
+
+  /* "Ohne Animation" bzw. System-Einstellung "weniger Bewegung" respektieren */
+  [data-anim="instant"] *, [data-anim="instant"] *::before, [data-anim="instant"] *::after{ animation:none!important; transition:none!important }
+  @media (prefers-reduced-motion:reduce){ *, *::before, *::after{ animation:none!important; transition-duration:.01s!important } }
 </style>
 </head>
 <body>
@@ -478,7 +683,8 @@
         <div class="dsec">
           <h4>SEITENSTIL</h4>
           <div class="dgrid">
-            <label class="dopt"><input type="radio" name="d-style" value="cyber" checked><b>Cyberpunk</b><span>Neon, Glow, Scanlines</span></label>
+            <label class="dopt" style="grid-column:1/-1"><input type="radio" name="d-style" value="modern" checked><b>Modern</b><span>Glas, Aurora-Hintergrund, weiche Animationen</span></label>
+            <label class="dopt"><input type="radio" name="d-style" value="cyber"><b>Cyberpunk</b><span>Neon, Glow, Scanlines</span></label>
             <label class="dopt"><input type="radio" name="d-style" value="flat"><b>Flat 2D</b><span>Clean, ohne Effekte</span></label>
             <label class="dopt"><input type="radio" name="d-style" value="depth"><b>3D Depth</b><span>Tiefe, Schatten, Perspektive</span></label>
             <label class="dopt"><input type="radio" name="d-style" value="dense"><b>btop-Dense</b><span>Kompakt, viel Info</span></label>
@@ -537,7 +743,7 @@
     <div class="stack">
     <!-- SYSTEM -->
     <section class="panel p-sys">
-      <h2><b>▚ SYSTEM</b><span id="sys-load"></span></h2>
+      <h2><b><i class="glyph">▚</i> SYSTEM</b><span id="sys-load"></span></h2>
       <div class="body">
         <div>
           <div class="row"><span>CPU</span><b id="cpu-pct">0%</b></div>
@@ -569,14 +775,19 @@
 
     <!-- WETTER (7 Tage + DWD-Radar) -->
     <section class="panel p-wx p-wx-left" id="wx-panel">
-      <h2><b>▚ WETTER REMSCHEID</b><span id="wx-upd">–</span></h2>
+      <h2><b><i class="glyph">▚</i> WETTER REMSCHEID</b><span id="wx-upd">–</span></h2>
       <div class="body">
         <div class="wx-days" id="wx-days">
           <div class="wx-day"><span class="dow">…</span><span class="ic">–</span><span class="tv">–</span><span class="rr">–</span></div>
         </div>
         <div class="wx-radar" id="wx-radar">
-          <span class="wx-radartag">RADAR · DWD</span>
+          <span class="wx-radartag">RADAR · DWD · +12 H</span>
           <div class="wx-radar-fail" id="wx-radar-fail">RADAR UNVERFÜGBAR</div>
+          <div class="rx-ctl" id="rx-ctl">
+            <button id="rx-play" title="Abspielen / Pause">❚❚</button>
+            <div class="rx-info"><b id="rx-time">--:--</b><span id="rx-kind">LÄDT …</span></div>
+            <div class="rx-track" id="rx-track"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -586,7 +797,7 @@
     <div class="stack">
       <!-- GPU -->
       <section class="panel p-gpu">
-        <h2><b>▚ GPU CLUSTER</b><span id="gpu-sum"></span></h2>
+        <h2><b><i class="glyph">▚</i> GPU CLUSTER</b><span id="gpu-sum"></span></h2>
         <div class="body">
           <div class="energy">
             <div><div class="w" id="e-watts">– W</div><div class="k">GERADE</div></div>
@@ -600,7 +811,7 @@
 
       <!-- SHELLYEM3 -->
       <section class="panel p-shelly" id="shelly-panel">
-        <h2><b>▚ SHELLYEM3</b><span id="shelly-host">192.168.178.21</span></h2>
+        <h2><b><i class="glyph">▚</i> SHELLYEM3</b><span id="shelly-host">192.168.178.21</span></h2>
         <div class="body">
           <div class="shelly" id="shelly-box">
             <div>
@@ -629,7 +840,7 @@
     <!-- LLAMA + WETTER (gemeinsame Spalte, übereinander) -->
     <div class="stack">
     <section class="panel p-llm">
-      <h2><b>▚ LLAMA-CPP</b><span id="llm-host">127.0.0.1:9070</span></h2>
+      <h2><b><i class="glyph">▚</i> LLAMA-CPP</b><span id="llm-host">127.0.0.1:9070</span></h2>
       <div class="body">
         <div class="llm-top">
           <div class="led" id="led"></div>
@@ -656,7 +867,7 @@
 
     <!-- TOP PROZESSE (früher in SYSTEM) -->
     <section class="panel p-proc" id="proc-panel">
-      <h2><b>▚ TOP PROZESSE</b><span></span></h2>
+      <h2><b><i class="glyph">▚</i> TOP PROZESSE</b><span></span></h2>
       <div class="body">
         <table><thead><tr><th>PROZESS</th><th>CPU%</th><th>RAM%</th></tr></thead>
         <tbody id="procs"></tbody></table>
@@ -750,13 +961,39 @@ else setTheme("cyber", true);
 document.querySelectorAll("input[name=theme]").forEach(r=>r.onchange=()=>setTheme(r.value, false));
 
 /* ---- design-optionen ---- */
-const D_DEFAULTS={style:"cyber",font:"mono",diagram:"bars",anim:"normal",corners:"chamfer",
+const D_DEFAULTS={style:"modern",font:"mono",diagram:"bars",anim:"normal",corners:"chamfer",
   glow:100,scan:true,grid:true};
 let D={...D_DEFAULTS};
 try{
   const s=localStorage.getItem("sysdash-design");
   if(s) D={...D_DEFAULTS,...JSON.parse(s)};
+  // einmalig auf den neuen Modern-Stil umstellen (alte Stile bleiben im Menü wählbar)
+  if(!localStorage.getItem("sysdash-modern")){
+    D.style="modern"; localStorage.setItem("sysdash-modern","1");
+    localStorage.setItem("sysdash-design", JSON.stringify(D));
+  }
 }catch(e){}
+document.querySelectorAll(".panel").forEach((p,i)=>p.style.setProperty("--i",i));
+
+/* Zahlen weich hochzählen statt springen */
+const numState=new WeakMap();
+function tweenNum(el,to,dec,suffix=""){
+  if(!el)return;
+  const st=numState.get(el);
+  if(st&&st.raf)cancelAnimationFrame(st.raf);
+  const from=st?st.cur:to;
+  if(document.documentElement.dataset.anim==="instant"||from===to||document.hidden){
+    el.textContent=to.toFixed(dec)+suffix; numState.set(el,{cur:to}); return;
+  }
+  const s={cur:from,raf:0}, t0=performance.now(), dur=600;
+  numState.set(el,s);
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,3);
+    s.cur=from+(to-from)*e; el.textContent=s.cur.toFixed(dec)+suffix;
+    s.raf=k<1?requestAnimationFrame(step):0;
+  };
+  s.raf=requestAnimationFrame(step);
+}
 function applyDesign(){
   const r=document.documentElement;
   r.dataset.style=D.style;
@@ -871,10 +1108,10 @@ function renderGpus(g){
     e.vram.style.width=pct+"%";
     // nvidia-smi liefert MiB – korrekt nach GB umrechnen
     e.vramT.textContent=(x.mem_used/1024).toFixed(1)+"G / "+(x.mem_total/1024).toFixed(1)+"G";
-    e.util.style.width=x.util+"%"; e.utilT.textContent=x.util.toFixed(0)+"%";
+    e.util.style.width=x.util+"%"; tweenNum(e.utilT,x.util,0,"%");
     pushBuf("g"+x.idx+"v", pct); pushBuf("g"+x.idx+"u", x.util);
     e.temp.textContent=x.temp+"°C"; e.temp.className="temp"+(x.temp>=85?" crit":x.temp>=75?" warn":"");
-    e.pwr.textContent=x.power.toFixed(0)+"W";
+    tweenNum(e.pwr,x.power,0,"W");
     e.fan.textContent=x.fan.toFixed(0)+"%";
     e.tag.textContent=x.util>50?"● BUSY":"○ IDLE";
     e.tag.style.color=x.util>50?"var(--mag)":"var(--dim)";
@@ -893,7 +1130,7 @@ function stats(){
     if(!ev.data.startsWith("stats "))return;
     const d=JSON.parse(ev.data.slice(6));
     if(!gotStats){gotStats=true; buildCores(d.cpu.count);}
-    $("cpu-pct").textContent=d.cpu.pct.toFixed(0)+"%";
+    tweenNum($("cpu-pct"),d.cpu.pct,0,"%");
     $("cpu-bar").style.width=d.cpu.pct+"%";
     $("cpu-bar").parentElement.classList.toggle("hot",d.cpu.pct>90);
     pushBuf("cpu", d.cpu.pct);
@@ -913,10 +1150,10 @@ function stats(){
     pushBuf("rx", d.net.rx); pushBuf("tx", d.net.tx);
     /* energie (GPU, selbst gemessen) */
     if(d.energy){
-      $("e-watts").textContent=d.energy.watts.toFixed(0)+" W";
-      $("e-today").textContent=(d.energy.today_wh/1000).toFixed(3);
+      tweenNum($("e-watts"),d.energy.watts,0," W");
+      tweenNum($("e-today"),d.energy.today_wh/1000,3);
       $("e-today-cost").textContent=fmtEuro(d.energy.today_wh/1000);
-      $("e-total").textContent=(d.energy.total_wh/1000).toFixed(3);
+      tweenNum($("e-total"),d.energy.total_wh/1000,3);
       $("e-total-cost").textContent=fmtEuro(d.energy.total_wh/1000);
     }
     /* shellyem3 (Zähler am Stromkasten) */
@@ -924,12 +1161,12 @@ function stats(){
       const box=$("shelly-box");
       box.classList.toggle("offline", !d.shelly.online);
       $("shelly-state").textContent=d.shelly.online?"ONLINE":"OFFLINE";
-      $("sh-watts").textContent=d.shelly.online?d.shelly.watts.toFixed(0)+" W":"– W";
-      $("sh-today").textContent=(d.shelly.today_wh/1000).toFixed(3);
+      if(d.shelly.online)tweenNum($("sh-watts"),d.shelly.watts,0," W"); else $("sh-watts").textContent="– W";
+      tweenNum($("sh-today"),d.shelly.today_wh/1000,3);
       $("sh-today-cost").textContent=fmtEuro(d.shelly.today_wh/1000);
       /* Gesamt abzgl. 3600 kWh Altdaten (Zähler wurde 2025 nicht zurückgesetzt) */
       const shTotalKwh=Math.max(0,(d.shelly.total_wh-3600000))/1000;
-      $("sh-total").textContent=shTotalKwh.toFixed(3);
+      tweenNum($("sh-total"),shTotalKwh,3);
       $("sh-total-cost").textContent=fmtEuro(shTotalKwh);
       const ph=$("sh-phases");
       const arr=d.shelly.phases||[];
@@ -1081,7 +1318,7 @@ function renderWeatherDays(w){
   if(upd&&w.updated)upd.textContent=new Date(w.updated*1000).toTimeString().slice(0,5)+" Uhr";
 }
 
-/* ============ radar: DWD RADOLAN (Leaflet WMS, keylos) ============ */
+/* ============ radar: DWD-Zeitraffer (Messung, Nowcast, ICON-EU) über /api/radar ============ */
 function initRadar(){
   if(typeof L==="undefined"||$("wx-radar").querySelector(".leaflet-map"))return;
   try{
@@ -1091,21 +1328,117 @@ function initRadar(){
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{
       attribution:'Imagery &copy; Esri', maxZoom:12
     }).addTo(map);
-    const radar=L.tileLayer.wms("https://maps.dwd.de/geoserver/dwd/wms",{
-      layers:"dwd:Radar_rv_product_1x1km_ger",
-      transparent:true, format:"image/png", version:"1.1.1", maxZoom:12
-    }).addTo(map);
-    radar.on("tileload",()=>$("wx-radar-fail").style.display="none");
     // Remscheid: Pin + Label
     const pin=L.marker([51.1798,7.1925],{
       icon:L.divIcon({className:"rx-pin", html:"<span>REMSCHEID</span>", iconSize:[96,18], iconAnchor:[48,33]})
     }).addTo(map);
-    // Radar alle 5 Min. neu von DWD laden (Timestamp zwingt Cache-Bypass)
-    setInterval(()=>{
+
+    // Zeitraffer: je Zeitpunkt EIN Bild über den lokalen Proxy /api/radar
+    // (der kümmert sich um DWD-Retries/Cache). Neue Bildsätze (Refresh, Pan/Zoom)
+    // werden im Hintergrund geladen und erst komplett getauscht.
+    const track=$("rx-track"), play=$("rx-play"), tEl=$("rx-time"), kEl=$("rx-kind");
+    let frames=[], idx=-1, nowT=0, playing=true, timer=null, gen=0, lastBuild=0;
+
+    // −1 h Messung (10 min), Nowcast bis +1:45 h (15 min, DWD-Lauf hinkt etwas), ICON-EU stündlich bis +12 h
+    function timeline(){
+      const now=Math.floor(Date.now()/300000)*300000, H=3600000, list=[];
+      for(let m=-60;m<=0;m+=10) list.push({t:now+m*60000, kind:"radar"});
+      for(let m=15;m<=105;m+=15) list.push({t:now+m*60000, kind:"nowcast"});
+      for(let t=Math.floor((now+2*H)/H)*H+H; t<=now+12*H; t+=H) list.push({t, kind:"model"});
+      return {now, list:list.map(f=>({...f, ov:null, url:null}))};
+    }
+    async function fetchFrame(f,b,s){
+      const sw=L.CRS.EPSG3857.project(b.getSouthWest()), ne=L.CRS.EPSG3857.project(b.getNorthEast());
+      const q=new URLSearchParams({kind:f.kind==="model"?"model":"radar", t:new Date(f.t).toISOString(),
+        bbox:[sw.x,sw.y,ne.x,ne.y].map(Math.round).join(","), w:s.x, h:s.y});
+      const r=await fetch("/api/radar?"+q,{cache:"no-store"});
+      if(!r.ok)throw new Error("radar "+r.status);
+      return URL.createObjectURL(await r.blob());
+    }
+    function drop(list){
+      for(const f of list){ if(f.ov)map.removeLayer(f.ov); if(f.url)URL.revokeObjectURL(f.url); f.ov=f.url=null; }
+    }
+    function renderTrack(){
+      track.innerHTML=frames.map(f=>`<i class="${f.kind}${f.t===nowT?" now":""}"></i>`).join("");
+      markTrack();
+    }
+    function markTrack(){
+      [...track.children].forEach((el,k)=>{ el.classList.toggle("ok",!!frames[k].ov); el.classList.toggle("on",k===idx); });
+    }
+    function label(f){
+      const d=Math.round((f.t-nowT)/60000), a=Math.abs(d);
+      const rel=a<60?a+" MIN":Math.floor(a/60)+(a%60?":"+String(a%60).padStart(2,"0"):"")+" H";
+      if(f.kind==="model") return "MODELL +"+rel;
+      if(f.kind==="nowcast") return "NOWCAST +"+rel;
+      return d===0?"JETZT · RADAR":"RADAR −"+rel;
+    }
+    function show(i){
+      idx=i;
+      frames.forEach((f,k)=>{ if(f.ov)f.ov.setOpacity(k===i?1:0); });
+      const f=frames[i];
+      if(f){ tEl.textContent=new Date(f.t).toTimeString().slice(0,5); kEl.textContent=label(f); kEl.className=f.kind; }
+      markTrack();
+    }
+    function tick(){
+      clearTimeout(timer);
+      if(!playing||document.hidden)return;
+      const ok=frames.map((f,k)=>f.ov?k:-1).filter(k=>k>=0);
+      if(!ok.length){ timer=setTimeout(tick,500); return; }
+      const nxt=ok.find(k=>k>idx);
+      show(nxt===undefined?ok[0]:nxt);
+      const last=idx===ok[ok.length-1];
+      timer=setTimeout(tick, frames[idx].t===nowT?2000:last?2500:650);
+    }
+    async function build(){
       if(document.hidden)return;
-      const u=radar.getUrl().replace(/[?&]_ts=\d+/,"");
-      radar.setUrl(u+(u.includes("?")?"&":"?")+"_ts="+Date.now());
-    }, 300000);
+      const b=map.getBounds(), s=map.getSize();
+      if(!s.x||!s.y)return;
+      const g=++gen, {now,list}=timeline();
+      lastBuild=Date.now();
+      if(!frames.length){ frames=list; nowT=now; idx=-1; renderTrack(); }   // erster Lauf: live auffüllen
+      let i=0;
+      const worker=async()=>{
+        while(i<list.length && g===gen){
+          const f=list[i++];
+          try{
+            const url=await fetchFrame(f,b,s);
+            if(g!==gen){ URL.revokeObjectURL(url); return; }
+            f.url=url; f.ov=L.imageOverlay(url,b,{opacity:0,interactive:false}).addTo(map);
+            if(list===frames)markTrack();
+          }catch(e){}
+        }
+      };
+      await Promise.all([worker(),worker(),worker()]);
+      if(g!==gen){ if(list!==frames)drop(list); return; }
+      if(list!==frames){
+        const old=frames; frames=list; nowT=now; idx=-1;
+        drop(old); renderTrack();
+        if(!playing){ const k=frames.findIndex(f=>f.t===now); show(k<0?0:k); }
+      }
+      const any=frames.some(f=>f.ov);
+      $("wx-radar-fail").style.display=any?"none":"flex";
+      if(!any)setTimeout(build,60000);
+    }
+    play.onclick=()=>{ playing=!playing; play.textContent=playing?"❚❚":"▶"; tick(); };
+    track.onclick=e=>{
+      const r=track.getBoundingClientRect();
+      const k=Math.max(0,Math.min(frames.length-1,Math.floor((e.clientX-r.left)/r.width*frames.length)));
+      playing=false; play.textContent="▶"; clearTimeout(timer); show(k);
+    };
+    L.DomEvent.disableClickPropagation($("rx-ctl"));
+    L.DomEvent.disableScrollPropagation($("rx-ctl"));
+
+    let rxMove=null;
+    map.on("moveend",()=>{clearTimeout(rxMove); rxMove=setTimeout(build,600);});
+    // Panel kann beim Start noch 0 px groß sein → bei Größenänderung neu vermessen
+    new ResizeObserver(()=>map.invalidateSize()).observe($("wx-radar"));
+    document.addEventListener("visibilitychange",()=>{
+      if(document.hidden)return;
+      if(Date.now()-lastBuild>600000)build();
+      tick();
+    });
+    setInterval(build, 600000);   // alle 10 min neue Zeitachse
+    build(); tick();
   }catch(e){
     $("wx-radar-fail").style.display="flex";
   }

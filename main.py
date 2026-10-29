@@ -8,15 +8,19 @@ FastAPI-Server (127.0.0.1:8787) mit einem WebSocket-Stream:
 import asyncio
 import json
 import os
+import re
 import signal
 import subprocess
 import time
-from datetime import date
+from collections import OrderedDict
+from datetime import date, datetime, timezone
 from pathlib import Path
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import psutil
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 PORT = int(os.environ.get("SYSDASH_PORT", "8787"))
@@ -445,6 +449,81 @@ async def logs_route(ws: WebSocket):
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- radar (DWD-Proxy)
+# maps.dwd.de hat mehrere Backends: eins liefert teils Daten von gestern, und
+# viele parallele Requests hängen ~50 s. Daher hier: feste Zeit pro Bild (altes
+# Backend antwortet dann mit XML-Fehler → neuer Versuch), Timeout, max. 3
+# gleichzeitige Requests, Cache.
+DWD_WMS = "https://maps.dwd.de/geoserver/dwd/wms"
+RADAR_STYLE = "radar_rv_product_1x1km_ger"
+RADAR_LAYERS = {
+    "radar": "dwd:Radar_rv_product_1x1km_ger",          # Messung + Nowcast bis +2 h
+    "model": "dwd:Icon-eu_reg00625_fd_sl_TOTPREC01H",   # ICON-EU, Niederschlag 1 h
+}
+_TIME_RE = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:00\.000Z$")
+_radar_cache = OrderedDict()    # key -> (bytes, läuft_ab)
+_RADAR_CACHE_MAX = 400
+_dwd_sem = asyncio.Semaphore(3)
+
+
+def _dwd_get(params: dict) -> bytes:
+    req = Request(DWD_WMS + "?" + urlencode(params), headers={"User-Agent": "sysdash"})
+    with urlopen(req, timeout=12) as r:
+        ct = r.headers.get("Content-Type", "")
+        body = r.read()
+    if not ct.startswith("image/"):
+        raise ValueError(body[:200].decode(errors="replace"))
+    return body
+
+
+async def _dwd_image(kind: str, t: str, bbox: str, w: int, h: int) -> bytes:
+    key = (kind, t, bbox, w, h)
+    hit = _radar_cache.get(key)
+    if hit and hit[1] > time.time():
+        _radar_cache.move_to_end(key)
+        return hit[0]
+    params = {
+        "service": "WMS", "request": "GetMap", "version": "1.1.1",
+        "layers": RADAR_LAYERS[kind], "styles": RADAR_STYLE,
+        "format": "image/png", "transparent": "true", "srs": "EPSG:3857",
+        "bbox": bbox, "width": w, "height": h, "time": t,
+    }
+    last = None
+    for attempt in range(4):
+        try:
+            async with _dwd_sem:
+                body = await asyncio.to_thread(_dwd_get, params)
+            ts = datetime.strptime(t, "%Y-%m-%dT%H:%M:00.000Z").replace(tzinfo=timezone.utc).timestamp()
+            # Vergangenheit ändert sich nicht mehr; Vorhersagen werden neu gerechnet
+            ttl = 3600 if ts <= time.time() else (300 if kind == "radar" else 1800)
+            _radar_cache[key] = (body, time.time() + ttl)
+            while len(_radar_cache) > _RADAR_CACHE_MAX:
+                _radar_cache.popitem(last=False)
+            return body
+        except Exception as e:
+            last = e
+            await asyncio.sleep(0.4 * (attempt + 1))
+    raise last
+
+
+@app.get("/api/radar")
+async def radar_image(kind: str, t: str, bbox: str, w: int = 512, h: int = 512):
+    """Ein Radar-/Modellbild für Zeit t (UTC, ISO) und bbox (EPSG:3857)."""
+    try:
+        parts = [float(x) for x in bbox.split(",")]
+    except ValueError:
+        parts = []
+    if kind not in RADAR_LAYERS or not _TIME_RE.match(t) or len(parts) != 4 \
+            or not (16 <= w <= 2048 and 16 <= h <= 2048):
+        return Response(status_code=400)
+    bbox = ",".join(f"{x:.0f}" for x in parts)
+    try:
+        body = await _dwd_image(kind, t, bbox, w, h)
+    except Exception:
+        return Response(status_code=502)
+    return Response(content=body, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 app.mount("/", StaticFiles(directory=str(STATIC), html=True), name="static")
