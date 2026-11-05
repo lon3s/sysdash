@@ -13,13 +13,20 @@ mit Zeitraffer bis +12 h.
 - **FastAPI-Server** (`127.0.0.1:8787`) mit WebSocket-Streams
   - `/ws/stats` — CPU/RAM/Swap/Top-Prozesse, beide GPUs (nvidia-smi), LLM-Slots,
     Netzwerk-Raten, GPU-Energie, ShellyEM3, Wetter (~2 Hz)
-  - `/ws/logs` — `journalctl -u llama-cpp -f`, zeilenweise
+  - `/ws/logs` — `journalctl -u llama-cpp -f`, zeilenweise (wird nur noch für die
+    LLM-Werte ausgewertet, nicht mehr angezeigt)
 - **Energie-Integration** — GPU-Leistung wird in kWh integriert und in
   `energy.json` persistiert (pro Tag + gesamt), Kosten mit 0,35 €/kWh
 - **ShellyEM3** — absolute Zählerwerte vom Stromkasten, Tages-Delta wird
   lokal gehalten und übersteht Neustarts (`shelly.json`), Leistung je Phase
 - **LLM-Monitoring** — Slots, TPS, Decoded, Modell aus der llama.cpp-Server-API
   (`http://127.0.0.1:9070/slots`), Prompt-Progress aus den Logs
+- **Kamera** — Livebild einer [Frigate](https://frigate.video)-Kamera im LLAMA-CPP-Panel
+  (statt der Docker-Logs). Der Server meldet sich mit einem eigenen Viewer-Benutzer
+  bei Frigate an und reicht den MJPEG-Stream unter `/api/cam` durch; Zugang in
+  `cam.json` (nicht im Git):
+  `{"url": "https://<frigate>:8971", "camera": "<name>", "user": "...", "password": "..."}`.
+  Ohne Signal erscheint „KEIN SIGNAL“, die Seite verbindet sich selbst neu.
 - **Wetter** — 7-Tage-Vorschau von Open-Meteo (Remscheid), stündlich neu geladen
 - **Regenradar-Zeitraffer** (DWD, keylos) als Endlosschleife mit Play/Pause
   und klickbarer Zeitleiste:

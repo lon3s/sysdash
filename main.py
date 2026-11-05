@@ -3,7 +3,8 @@
 
 FastAPI-Server (127.0.0.1:8787) mit einem WebSocket-Stream:
   - "stats" : CPU/RAM/Swap/Top-Prozesse + beide GPUs + LLM-Slots (~2 Hz)
-  - "log"   : docker logs -f llama-cpp, zeilenweise, max 500 Zeilen
+  - "log"   : journalctl -u llama-cpp -f, zeilenweise (nur noch fuer die llama-Werte)
+Dazu /api/cam: MJPEG-Livestream einer Frigate-Kamera (Zugang in cam.json).
 """
 import asyncio
 import json
@@ -15,12 +16,14 @@ import time
 from collections import OrderedDict
 from datetime import date, datetime, timezone
 from pathlib import Path
+import ssl
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import psutil
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 PORT = int(os.environ.get("SYSDASH_PORT", "8787"))
@@ -524,6 +527,79 @@ async def radar_image(kind: str, t: str, bbox: str, w: int = 512, h: int = 512):
     except Exception:
         return Response(status_code=502)
     return Response(content=body, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+# ---------------------------------------------------------------- kamera (Frigate-Proxy)
+# Holt den MJPEG-Livestream einer Frigate-Kamera (eigener Viewer-Benutzer) und
+# reicht ihn an die Seite durch. Zugangsdaten in cam.json (nicht im Git):
+#   {"url": "https://<frigate>:8971", "camera": "<name>", "user": "...", "password": "..."}
+CAM_FILE = Path(__file__).parent / "cam.json"
+_cam = {"token": None, "last_frame": 0.0}
+_cam_ssl = ssl._create_unverified_context()     # Frigate nutzt ein selbstsigniertes Zertifikat
+
+
+def _cam_cfg():
+    try:
+        return json.loads(CAM_FILE.read_text())
+    except Exception:
+        return None
+
+
+def _cam_login(cfg) -> str:
+    req = Request(cfg["url"] + "/api/login",
+                  data=json.dumps({"user": cfg["user"], "password": cfg["password"]}).encode(),
+                  headers={"Content-Type": "application/json"})
+    with urlopen(req, context=_cam_ssl, timeout=8) as r:
+        for c in r.headers.get_all("Set-Cookie") or []:
+            if c.startswith("frigate_token="):
+                return c.split(";", 1)[0]
+    raise ValueError("kein Token")
+
+
+def _cam_open(cfg, height: int):
+    url = f'{cfg["url"]}/api/{cfg.get("camera", "eken")}?fps=5&height={height}&bbox=0'
+    for attempt in range(2):
+        if not _cam["token"]:
+            _cam["token"] = _cam_login(cfg)
+        try:
+            return urlopen(Request(url, headers={"Cookie": _cam["token"]}), context=_cam_ssl, timeout=8)
+        except HTTPError as e:
+            if e.code in (401, 403) and attempt == 0:
+                _cam["token"] = None        # Token abgelaufen -> neu anmelden
+                continue
+            raise
+
+
+@app.get("/api/cam")
+async def cam_stream(h: int = 480):
+    cfg = _cam_cfg()
+    if not cfg:
+        return Response(status_code=404)
+    try:
+        upstream = await asyncio.to_thread(_cam_open, cfg, max(120, min(h, 1080)))
+    except Exception:
+        return Response(status_code=503)
+    ctype = upstream.headers.get("Content-Type", "multipart/x-mixed-replace;boundary=frame")
+
+    async def relay():
+        try:
+            while True:
+                chunk = await asyncio.to_thread(upstream.read1, 65536)
+                if not chunk:
+                    break
+                _cam["last_frame"] = time.time()
+                yield chunk
+        finally:
+            upstream.close()
+
+    return StreamingResponse(relay(), media_type=ctype, headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/cam/status")
+def cam_status():
+    """Alter des letzten empfangenen Stream-Stücks (Sekunden); Seite erkennt so Standbild."""
+    return {"configured": CAM_FILE.exists(),
+            "age": (time.time() - _cam["last_frame"]) if _cam["last_frame"] else None}
 
 
 app.mount("/", StaticFiles(directory=str(STATIC), html=True), name="static")

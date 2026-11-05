@@ -362,12 +362,21 @@
   #logsbar{display:flex; justify-content:space-between; font-size:12px; color:var(--dim); letter-spacing:2px;
     border-bottom:1px solid var(--line); padding:5px 2px}
 
+  /* ---------- kamera (statt Docker-Logs) ---------- */
+  .cam{flex:1; min-height:160px; background:var(--logbg); border:1px solid var(--line);
+    overflow:hidden; position:relative}
+  .cam img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
+  .cam-off{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:var(--dim); letter-spacing:4px; font-size:14px; background:var(--logbg)}
+  .cam.live .cam-off{display:none}
+  #cam-state.on{color:var(--grn)}
+
   /* ---------- wetter panel ---------- */
   .stack .p-llm{flex:1.6; min-height:0}
   .stack .p-wx{flex:1; min-height:0}
   .stack .p-sys{flex:1.4; min-height:0}
   .stack .p-wx-left{flex:1; min-height:0}
-  .stack .p-proc{flex:1; min-height:0}
+  .stack .p-proc{flex:0 0 auto; min-height:0}   /* nur so hoch wie die Tabelle -> mehr Platz fuer die Kamera */
   .p-wx h2 b{color:var(--cyan)}
   .p-proc h2 b{color:var(--yel)}
   .p-wx .body{gap:8px; padding:10px 14px}
@@ -584,6 +593,7 @@
   [data-style="modern"] td{ font-size:13px }
   [data-style="modern"] tbody tr:hover td{ background:var(--tint) }
   [data-style="modern"] .logs{ border-radius:12px; border-color:var(--edge) }
+  [data-style="modern"] .cam{ border-radius:12px; border-color:var(--edge) }
   [data-style="modern"] .logs .inner{ font-size:12.5px }
   [data-style="modern"] .ln{ animation:lnIn .4s var(--ease) }
   @keyframes lnIn{from{opacity:0; transform:translateX(-6px)}}
@@ -860,8 +870,11 @@
           <div class="bar"><i id="prog-bar" style="width:0%"></i><div class="ticks"></div></div>
         </div>
         <div class="fill"></div>
-        <div id="logsbar"><span>DOCKER LOGS // llama-cpp</span><span id="ln-count">0</span></div>
-        <div class="logs"><div class="inner" id="logbody"></div></div>
+        <div id="logsbar"><span>KAMERA // eken</span><span id="cam-state">–</span></div>
+        <div class="cam" id="cam-box">
+          <img id="cam-img" alt="">
+          <div class="cam-off" id="cam-off">KEIN SIGNAL</div>
+        </div>
       </div>
     </section>
 
@@ -1220,8 +1233,7 @@ function renderLlm(l){
   setProg(null, busy); /* Warte-/Runden-Logik an Status koppeln */
 }
 
-/* ============ logs ws (Auto-Scroll + Parsing) ============ */
-const logbody=$("logbody"); let lnCount=0, autoscroll=true;
+/* ============ logs ws (nur noch Parsing der llama-Werte, keine Anzeige) ============ */
 /* progress-Zyklen-Logik:
    Werte kommen  -> Balken füllt sich
    Wert = 1.00   -> sofort zurück auf 0, WARTEN
@@ -1268,24 +1280,42 @@ function logs(){
   ws.onclose=()=>$("c-logs").classList.remove("on");
   ws.onmessage=ev=>{
     if(!ev.data.startsWith("log "))return;
-    const t=ev.data.slice(4);
-    parseLlamaLine(t);
-    const div=document.createElement("div");
-    div.className="ln"+(/\b(error|fail|fatal)\b/i.test(t)?" err":/\bwarn/i.test(t)?" warn":"");
-    const ts=new Date().toTimeString().slice(0,8);
-    div.innerHTML=`<span class="t">${ts}</span>`;
-    div.appendChild(document.createTextNode(t));
-    logbody.appendChild(div);
-    while(logbody.children.length>400) logbody.firstChild.remove();
-    lnCount++; $("ln-count").textContent=lnCount;
-    if(autoscroll) logbody.scrollTop=logbody.scrollHeight;
+    parseLlamaLine(ev.data.slice(4));
   };
   ws.onerror=()=>ws.close();
   setTimeout(()=>{if(ws.readyState>1)logs();},2000);
 }
-logbody.addEventListener("scroll",()=>{
-  autoscroll=logbody.scrollHeight-logbody.scrollTop-logbody.clientHeight<40;
+
+/* ============ kamera (MJPEG über /api/cam) ============
+   Stream läuft über den sysdash-Server (Frigate-Login bleibt dort).
+   Alle 5 s prüfen, ob noch Bilder kommen; sonst "KEIN SIGNAL" + neu verbinden. */
+const camImg=$("cam-img"), camBox=$("cam-box"), camState=$("cam-state");
+let camLive=false;
+function camSet(live){
+  camLive=live;
+  camBox.classList.toggle("live",live);
+  camState.textContent=live?"LIVE":"OFFLINE";
+  camState.classList.toggle("on",live);
+}
+function camConnect(){
+  const h=Math.min(1080,Math.max(240,Math.round(camBox.clientHeight*(window.devicePixelRatio||1))));
+  camImg.src=`/api/cam?h=${h}&t=${Date.now()}`;
+}
+camImg.onload=()=>camSet(true);      /* feuert beim ersten MJPEG-Bild */
+camImg.onerror=()=>{camSet(false); setTimeout(camConnect,10000);};
+setInterval(async()=>{
+  if(document.hidden) return;
+  try{
+    const s=await (await fetch("/api/cam/status",{cache:"no-store"})).json();
+    if(!s.configured){camSet(false); camState.textContent="NICHT EINGERICHTET"; return;}
+    if(camLive && (s.age===null || s.age>8)){camSet(false); camConnect();}
+  }catch(e){}
+},5000);
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){ camImg.removeAttribute("src"); camSet(false); }
+  else camConnect();
 });
+camConnect();
 
 /* ============ weather (Remscheid) ============ */
 const WICON={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",56:"🌧️",57:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",66:"🌧️",67:"🌧️",71:"🌨️",73:"🌨️",75:"❄️",77:"❄️",80:"🌦️",81:"🌧️",82:"⛈️",85:"🌨️",86:"❄️",95:"⛈️",96:"⛈️",99:"⛈️"};
