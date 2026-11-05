@@ -23,7 +23,9 @@ mit Zeitraffer bis +12 h.
   (`http://127.0.0.1:9070/slots`), Prompt-Progress aus den Logs
 - **Kamera** — Livebild einer [Frigate](https://frigate.video)-Kamera im LLAMA-CPP-Panel
   (statt der Docker-Logs). Der Server meldet sich mit einem eigenen Viewer-Benutzer
-  bei Frigate an und reicht den MJPEG-Stream unter `/api/cam` durch; Zugang in
+  bei Frigate an und reicht den go2rtc-MSE-Stream unter `/ws/cam` durch (H.264, ~30 fps,
+  ohne Neukodierung; Ersatz bei Browsern ohne MediaSource: MJPEG mit 5 fps unter
+  `/api/cam`); Zugang in
   `cam.json` (nicht im Git):
   `{"url": "https://<frigate>:8971", "camera": "<name>", "user": "...", "password": "..."}`.
   Ohne Signal erscheint „KEIN SIGNAL“, die Seite verbindet sich selbst neu.

@@ -4,7 +4,8 @@
 FastAPI-Server (127.0.0.1:8787) mit einem WebSocket-Stream:
   - "stats" : CPU/RAM/Swap/Top-Prozesse + beide GPUs + LLM-Slots (~2 Hz)
   - "log"   : journalctl -u llama-cpp -f, zeilenweise (nur noch fuer die llama-Werte)
-Dazu /api/cam: MJPEG-Livestream einer Frigate-Kamera (Zugang in cam.json).
+Dazu /ws/cam: Live-Video einer Frigate-Kamera (go2rtc-MSE durchgereicht, Fallback
+/api/cam als MJPEG); Zugang in cam.json.
 """
 import asyncio
 import json
@@ -593,6 +594,64 @@ async def cam_stream(h: int = 480):
             upstream.close()
 
     return StreamingResponse(relay(), media_type=ctype, headers={"Cache-Control": "no-store"})
+
+
+@app.websocket("/ws/cam")
+async def cam_ws(ws: WebSocket):
+    """Flüssiges Video: reicht den go2rtc-MSE-WebSocket von Frigate durch
+    (H.264 als fMP4, keine Neukodierung). Die Seite spricht das go2rtc-Protokoll."""
+    import websockets
+    await ws.accept()
+    cfg = _cam_cfg()
+    if not cfg:
+        await ws.close(code=4404)
+        return
+    url = cfg["url"].replace("https://", "wss://").replace("http://", "ws://") \
+        + f'/live/mse/api/ws?src={cfg.get("camera", "eken")}'
+    upstream = None
+    for attempt in range(2):
+        try:
+            if not _cam["token"]:
+                _cam["token"] = await asyncio.to_thread(_cam_login, cfg)
+            upstream = await websockets.connect(
+                url, ssl=_cam_ssl if url.startswith("wss") else None,
+                additional_headers={"Cookie": _cam["token"]},
+                max_size=None, open_timeout=8)
+            break
+        except websockets.InvalidStatus as e:
+            if e.response.status_code in (401, 403) and attempt == 0:
+                _cam["token"] = None
+                continue
+            break
+        except Exception:
+            break
+    if upstream is None:
+        await ws.close(code=4503)
+        return
+
+    async def to_browser():
+        async for msg in upstream:
+            if isinstance(msg, bytes):
+                _cam["last_frame"] = time.time()
+                await ws.send_bytes(msg)
+            else:
+                await ws.send_text(msg)
+
+    async def to_frigate():
+        while True:
+            await upstream.send(await ws.receive_text())
+
+    tasks = [asyncio.create_task(to_browser()), asyncio.create_task(to_frigate())]
+    try:
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        for t in tasks:
+            t.cancel()
+        await upstream.close()
+        try:
+            await ws.close()
+        except Exception:
+            pass
 
 
 @app.get("/api/cam/status")

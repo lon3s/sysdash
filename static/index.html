@@ -365,7 +365,8 @@
   /* ---------- kamera (statt Docker-Logs) ---------- */
   .cam{flex:1; min-height:160px; background:var(--logbg); border:1px solid var(--line);
     overflow:hidden; position:relative}
-  .cam img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
+  .cam :is(img,video){position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
+  .cam [hidden]{display:none}   /* sonst zeichnet das leere Ersatzbild einen grauen Rahmen */
   .cam-off{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     color:var(--dim); letter-spacing:4px; font-size:14px; background:var(--logbg)}
   .cam.live .cam-off{display:none}
@@ -872,7 +873,8 @@
         <div class="fill"></div>
         <div id="logsbar"><span>KAMERA // eken</span><span id="cam-state">–</span></div>
         <div class="cam" id="cam-box">
-          <img id="cam-img" alt="">
+          <video id="cam-vid" muted autoplay playsinline disablepictureinpicture></video>
+          <img id="cam-img" alt="" hidden>
           <div class="cam-off" id="cam-off">KEIN SIGNAL</div>
         </div>
       </div>
@@ -1286,23 +1288,83 @@ function logs(){
   setTimeout(()=>{if(ws.readyState>1)logs();},2000);
 }
 
-/* ============ kamera (MJPEG über /api/cam) ============
-   Stream läuft über den sysdash-Server (Frigate-Login bleibt dort).
-   Alle 5 s prüfen, ob noch Bilder kommen; sonst "KEIN SIGNAL" + neu verbinden. */
-const camImg=$("cam-img"), camBox=$("cam-box"), camState=$("cam-state");
-let camLive=false;
+/* ============ kamera ============
+   Flüssig: /ws/cam reicht den go2rtc-MSE-Stream von Frigate durch (H.264, ~30 fps,
+   keine Neukodierung) -> MediaSource im <video>. Ohne MediaSource: MJPEG über /api/cam (5 fps).
+   Alle 5 s prüfen, ob noch Daten kommen; sonst "KEIN SIGNAL" + neu verbinden. */
+const camVid=$("cam-vid"), camImg=$("cam-img"), camBox=$("cam-box"), camState=$("cam-state");
+const camMSE=!!window.MediaSource;
+let camLive=false, camWs=null, camRetry=null;
 function camSet(live){
   camLive=live;
   camBox.classList.toggle("live",live);
   camState.textContent=live?"LIVE":"OFFLINE";
   camState.classList.toggle("on",live);
 }
-function camConnect(){
-  const h=Math.min(1080,Math.max(240,Math.round(camBox.clientHeight*(window.devicePixelRatio||1))));
-  camImg.src=`/api/cam?h=${h}&t=${Date.now()}`;
+function camStop(){
+  clearTimeout(camRetry);
+  if(camWs){ camWs.onclose=null; camWs.close(); camWs=null; }
+  if(camVid.src){ URL.revokeObjectURL(camVid.src); camVid.removeAttribute("src"); camVid.load(); }
+  camImg.removeAttribute("src");
 }
-camImg.onload=()=>camSet(true);      /* feuert beim ersten MJPEG-Bild */
-camImg.onerror=()=>{camSet(false); setTimeout(camConnect,10000);};
+function camLater(ms){ clearTimeout(camRetry); camRetry=setTimeout(camConnect,ms); }
+function camConnect(){
+  camStop();
+  if(!camMSE){
+    camVid.hidden=true; camImg.hidden=false;
+    const h=Math.min(1080,Math.max(240,Math.round(camBox.clientHeight*(window.devicePixelRatio||1))));
+    camImg.src=`/api/cam?h=${h}&t=${Date.now()}`;
+    return;
+  }
+  const CODECS=["avc1.640029","avc1.64002A","avc1.640033","avc1.4D0029","avc1.42E01E","hvc1.1.6.L153.B0"]
+    .filter(c=>MediaSource.isTypeSupported(`video/mp4; codecs="${c}"`));
+  const ws=new WebSocket(`ws://${location.host}/ws/cam`); camWs=ws;
+  ws.binaryType="arraybuffer";
+  let ms=null, sb=null; const queue=[];
+  function pump(){
+    if(!sb || sb.updating || !queue.length) return;
+    try{
+      /* Puffer klein halten: alles älter als 10 s weg */
+      const b=sb.buffered;
+      if(b.length && b.end(b.length-1)-b.start(0)>20 && !sb.updating){
+        sb.remove(b.start(0), b.end(b.length-1)-10); return;
+      }
+      sb.appendBuffer(queue.shift());
+    }catch(e){ queue.length=0; }
+  }
+  ws.onopen=()=>ws.send(JSON.stringify({type:"mse",value:CODECS.join(",")}));
+  ws.onmessage=ev=>{
+    if(typeof ev.data==="string"){
+      let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+      if(m.type==="mse" && !ms){
+        ms=new MediaSource();
+        camVid.src=URL.createObjectURL(ms);
+        ms.addEventListener("sourceopen",()=>{
+          try{ sb=ms.addSourceBuffer(m.value); sb.mode="segments"; }catch(e){ ws.close(); return; }
+          sb.addEventListener("updateend",()=>{
+            /* am Live-Rand bleiben (sonst läuft eine Verzögerung auf) */
+            const b=sb.buffered;
+            if(b.length){
+              const end=b.end(b.length-1);
+              if(end-camVid.currentTime>1.5) camVid.currentTime=end-0.3;
+              /* Firefox startet MSE-Video nicht selbst -> ausdrücklich abspielen */
+              if(camVid.paused) camVid.play().catch(()=>{});
+              if(!camLive) camSet(true);
+            }
+            pump();
+          });
+          pump();
+        },{once:true});
+      }
+      return;
+    }
+    queue.push(ev.data); pump();
+  };
+  ws.onclose=()=>{ camWs=null; camSet(false); if(!document.hidden) camLater(10000); };
+}
+camVid.addEventListener("playing",()=>camSet(true));
+camImg.onload=()=>camSet(true);      /* MJPEG-Fallback: erstes Bild */
+camImg.onerror=()=>{camSet(false); camLater(10000);};
 setInterval(async()=>{
   if(document.hidden) return;
   try{
@@ -1312,7 +1374,7 @@ setInterval(async()=>{
   }catch(e){}
 },5000);
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden){ camImg.removeAttribute("src"); camSet(false); }
+  if(document.hidden){ camStop(); camSet(false); }
   else camConnect();
 });
 camConnect();
