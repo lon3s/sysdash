@@ -32,10 +32,15 @@ mit Zeitraffer bis +12 h.
 - **Wetter** — 7-Tage-Vorschau von Open-Meteo (Remscheid), stündlich neu geladen
 - **Regenradar-Zeitraffer** (DWD, keylos) als Endlosschleife mit Play/Pause
   und klickbarer Zeitleiste:
-  - −1 h bis jetzt: gemessenes Radar (`Radar_rv_product_1x1km_ger`, 10 min)
-  - bis +1:45 h: DWD-Nowcast (15 min)
-  - +2 h bis +12 h: Modell ICON-EU (`Icon-eu_reg00625_fd_sl_TOTPREC01H`,
-    stündlich), im selben Farbstil wie das Radar
+  - Ankerpunkt ist die **neueste echte Messung** des DWD (`/api/radar/latest`,
+    aus dem `REFERENCE_TIME` der Capabilities, kommt ~5–10 min verzögert)
+  - 1 h davor bis dahin: gemessenes Radar (`Radar_rv_product_1x1km_ger`, 10 min, blau)
+  - danach bis +2 h: DWD-Nowcast (15 min, gelb)
+  - ab der nächsten vollen Stunde bis +12 h: Modell ICON-EU
+    (`Icon-eu_reg00625_fd_sl_TOTPREC01H`, stündlich, pink), im selben Farbstil wie das Radar
+  - 1,8 s pro Bild, längere Pause bei der letzten Messung und am Ende
+  - die magentafarbene Reichweiten-Grenze des Radars wird herausgefiltert
+    (sieht sonst wie Extremregen aus)
 - **Radar-Proxy** `/api/radar` — der Server holt jedes Bild selbst von
   `maps.dwd.de`: feste Zeit pro Bild (ein DWD-Backend liefert teils Daten vom
   Vortag → wird erkannt und neu versucht), 12 s Timeout, max. 3 parallele

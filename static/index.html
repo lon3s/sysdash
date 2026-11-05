@@ -1431,13 +1431,33 @@ function initRadar(){
     const track=$("rx-track"), play=$("rx-play"), tEl=$("rx-time"), kEl=$("rx-kind");
     let frames=[], idx=-1, nowT=0, playing=true, timer=null, gen=0, lastBuild=0;
 
-    // −1 h Messung (10 min), Nowcast bis +1:45 h (15 min, DWD-Lauf hinkt etwas), ICON-EU stündlich bis +12 h
-    function timeline(){
-      const now=Math.floor(Date.now()/300000)*300000, H=3600000, list=[];
+    // Ankerpunkt = neueste echte Messung beim DWD (kommt ~5–10 min verzögert):
+    // davor 1 h Messung (blau, 10 min), danach Nowcast bis +2 h (gelb, 15 min),
+    // ab der nächsten vollen Stunde ICON-EU stündlich bis +12 h (pink).
+    async function latest(){
+      try{
+        const j=await (await fetch("/api/radar/latest",{cache:"no-store"})).json();
+        const t=Date.parse(j.t); if(t && Math.abs(Date.now()-t)<3*3600000) return t;
+      }catch(e){}
+      return Math.floor((Date.now()-600000)/300000)*300000;   // Ersatz: vor ~10 min
+    }
+    function timeline(now){
+      const H=3600000, list=[];
       for(let m=-60;m<=0;m+=10) list.push({t:now+m*60000, kind:"radar"});
-      for(let m=15;m<=105;m+=15) list.push({t:now+m*60000, kind:"nowcast"});
+      for(let m=15;m<=120;m+=15) list.push({t:now+m*60000, kind:"nowcast"});
       for(let t=Math.floor((now+2*H)/H)*H+H; t<=now+12*H; t+=H) list.push({t, kind:"model"});
       return {now, list:list.map(f=>({...f, ov:null, url:null}))};
+    }
+    // DWD zeichnet die Grenze der Radar-Reichweite in reinem Magenta (251,0,255) –
+    // sieht aus wie Extremregen (75–100 mm/h ist 204,0,152) → herausfiltern.
+    async function stripEdge(blob){
+      const bmp=await createImageBitmap(blob), c=document.createElement("canvas");
+      c.width=bmp.width; c.height=bmp.height;
+      const g=c.getContext("2d"); g.drawImage(bmp,0,0); bmp.close();
+      const d=g.getImageData(0,0,c.width,c.height), a=d.data;
+      for(let i=0;i<a.length;i+=4) if(a[i]>=240 && a[i+1]<=10 && a[i+2]>=240) a[i+3]=0;
+      g.putImageData(d,0,0);
+      return await new Promise(r=>c.toBlob(r,"image/png"));
     }
     async function fetchFrame(f,b,s){
       const sw=L.CRS.EPSG3857.project(b.getSouthWest()), ne=L.CRS.EPSG3857.project(b.getNorthEast());
@@ -1445,7 +1465,9 @@ function initRadar(){
         bbox:[sw.x,sw.y,ne.x,ne.y].map(Math.round).join(","), w:s.x, h:s.y});
       const r=await fetch("/api/radar?"+q,{cache:"no-store"});
       if(!r.ok)throw new Error("radar "+r.status);
-      return URL.createObjectURL(await r.blob());
+      let blob=await r.blob();
+      if(f.kind!=="model"){ try{ blob=await stripEdge(blob); }catch(e){} }
+      return URL.createObjectURL(blob);
     }
     function drop(list){
       for(const f of list){ if(f.ov)map.removeLayer(f.ov); if(f.url)URL.revokeObjectURL(f.url); f.ov=f.url=null; }
@@ -1462,7 +1484,7 @@ function initRadar(){
       const rel=a<60?a+" MIN":Math.floor(a/60)+(a%60?":"+String(a%60).padStart(2,"0"):"")+" H";
       if(f.kind==="model") return "MODELL +"+rel;
       if(f.kind==="nowcast") return "NOWCAST +"+rel;
-      return d===0?"JETZT · RADAR":"RADAR −"+rel;
+      return d===0?"LETZTE MESSUNG":"RADAR −"+rel;
     }
     function show(i){
       idx=i;
@@ -1479,13 +1501,13 @@ function initRadar(){
       const nxt=ok.find(k=>k>idx);
       show(nxt===undefined?ok[0]:nxt);
       const last=idx===ok[ok.length-1];
-      timer=setTimeout(tick, frames[idx].t===nowT?2000:last?2500:650);
+      timer=setTimeout(tick, frames[idx].t===nowT?4000:last?4500:1800);
     }
     async function build(){
       if(document.hidden)return;
       const b=map.getBounds(), s=map.getSize();
       if(!s.x||!s.y)return;
-      const g=++gen, {now,list}=timeline();
+      const g=++gen, {now,list}=timeline(await latest());
       lastBuild=Date.now();
       if(!frames.length){ frames=list; nowT=now; idx=-1; renderTrack(); }   // erster Lauf: live auffüllen
       let i=0;

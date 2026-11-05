@@ -512,6 +512,33 @@ async def _dwd_image(kind: str, t: str, bbox: str, w: int, h: int) -> bytes:
     raise last
 
 
+_radar_latest = {"t": None, "until": 0.0}
+_REF_RE = re.compile(r'<Dimension name="REFERENCE_TIME" default="([^"]+)"')
+
+
+def _radar_latest_fetch():
+    url = (f"https://maps.dwd.de/geoserver/dwd/{RADAR_LAYERS['radar'].split(':', 1)[1]}/ows"
+           "?service=WMS&version=1.3.0&request=GetCapabilities")
+    with urlopen(Request(url, headers={"User-Agent": "sysdash"}), timeout=20) as r:
+        m = _REF_RE.search(r.read().decode(errors="replace"))
+    if not m:
+        raise ValueError("kein REFERENCE_TIME")
+    return m.group(1)
+
+
+@app.get("/api/radar/latest")
+async def radar_latest():
+    """Zeit der neuesten echten Radarmessung (Analyse) beim DWD. Alles danach
+    ist Nowcast; die Seite färbt die Zeitleiste danach (2 min Cache)."""
+    if _radar_latest["until"] < time.time():
+        try:
+            _radar_latest["t"] = await asyncio.to_thread(_radar_latest_fetch)
+            _radar_latest["until"] = time.time() + 120
+        except Exception:
+            _radar_latest["until"] = time.time() + 30
+    return {"t": _radar_latest["t"]}
+
+
 @app.get("/api/radar")
 async def radar_image(kind: str, t: str, bbox: str, w: int = 512, h: int = 512):
     """Ein Radar-/Modellbild für Zeit t (UTC, ISO) und bbox (EPSG:3857)."""
